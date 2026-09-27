@@ -21,6 +21,8 @@ find_package(Qt6 6.4 REQUIRED COMPONENTS Widgets Network Svg)
 add_library(deskout_lib STATIC
     src/app/deskoutapp.cpp
     src/app/deskoutapp.h
+    src/app/readingmode.cpp
+    src/app/readingmode.h
     src/app/reminderalerts.cpp
     src/app/reminderalerts.h
     src/core/commands.h
@@ -39,6 +41,7 @@ add_library(deskout_lib STATIC
     src/platform/activity/activitymonitor.cpp
     src/platform/activity/activitymonitor.h
     src/platform/autostart.cpp
+    src/platform/grayscale/grayscalebackend.h
     src/platform/autostart.h
     src/platform/hotkey/globalhotkey.cpp
     src/platform/hotkey/globalhotkey.h
@@ -77,11 +80,13 @@ endif()
 if(WIN32)
     target_sources(deskout_lib PRIVATE
         src/platform/activity/activity_win.cpp
+        src/platform/grayscale/grayscale_win.cpp
         src/platform/hotkey/hotkeybackend_win.cpp)
-    target_link_libraries(deskout_lib PUBLIC user32 shell32)
+    target_link_libraries(deskout_lib PUBLIC user32 shell32 magnification)
 elseif(APPLE)
     target_sources(deskout_lib PRIVATE
         src/platform/activity/activity_mac.cpp
+        src/platform/grayscale/grayscale_mac.cpp
         src/platform/hotkey/hotkeybackend_mac.cpp)
     target_link_libraries(deskout_lib PUBLIC "-framework Carbon" "-framework ApplicationServices")
 else()
@@ -89,6 +94,9 @@ else()
     find_package(Qt6 REQUIRED COMPONENTS DBus)
     target_sources(deskout_lib PRIVATE
         src/platform/activity/activity_linux.cpp
+        src/platform/grayscale/grayscale_linux.cpp
+        src/platform/linux/gsettings.cpp
+        src/platform/linux/gsettings.h
         src/platform/hotkey/hotkeybackend_linux.cpp
         src/platform/hotkey/hotkeybackend_gnome.cpp
         src/platform/hotkey/hotkeybackend_x11.cpp
@@ -102,7 +110,9 @@ qt_add_resources(deskout "deskout_resources"
     BASE resources
     FILES
         resources/icons/deskout.svg
-        resources/icons/deskout-paused.svg)
+        resources/icons/deskout-paused.svg
+        resources/gnome-extension/metadata.json
+        resources/gnome-extension/extension.js)
 target_link_libraries(deskout PRIVATE deskout_lib)
 
 if(APPLE)

@@ -41,6 +41,7 @@ int main(int argc, char *argv[])
         {Commands::TogglePause, "Pause all reminders, or resume if paused."},
         {Commands::Pause, "Pause all reminders until resumed."},
         {Commands::Resume, "Resume all reminders."},
+        {Commands::ToggleReadingMode, "Switch Reading mode (grayscale) on or off."},
         {Commands::Quit, "Quit the running instance."},
     };
     for (const auto &[name, help] : commandOptions)
@@ -70,7 +71,8 @@ int main(int argc, char *argv[])
     // Nothing to pause/resume/quit if Deskout wasn't running (e.g. the
     // desktop shortcut fired after a crash). Don't start the app for it.
     if (command == QLatin1String(Commands::TogglePause) || command == QLatin1String(Commands::Pause)
-        || command == QLatin1String(Commands::Resume) || command == QLatin1String(Commands::Quit)) {
+        || command == QLatin1String(Commands::Resume) || command == QLatin1String(Commands::Quit)
+        || command == QLatin1String(Commands::ToggleReadingMode)) {
         std::fprintf(stderr, "Deskout is not running.\n");
         return 0;
     }

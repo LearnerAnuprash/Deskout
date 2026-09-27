@@ -7,6 +7,7 @@ class PauseManager;
 class QFrame;
 class QLabel;
 class QListWidget;
+class QPushButton;
 class QStackedWidget;
 class ReminderEngine;
 
@@ -18,7 +19,15 @@ class MainWindow : public QMainWindow
 
 public:
     // Rows of the "Status" card on the Home page.
-    enum class StatusRow { Hotkey, AutoStart, Tray, Notifications, IdleDetection, FullscreenDetection };
+    enum class StatusRow {
+        Hotkey,
+        AutoStart,
+        Tray,
+        Notifications,
+        IdleDetection,
+        FullscreenDetection,
+        ReadingMode,
+    };
 
     MainWindow(PauseManager *pause, ReminderEngine *reminders, QWidget *parent = nullptr);
 
@@ -27,10 +36,12 @@ public:
     void setHideOnClose(bool hide) { m_hideOnClose = hide; }
 
     void setStatus(StatusRow row, const QString &text);
+    void setReadingMode(bool checked, const QString &toolTip);
 
 Q_SIGNALS:
     void settingsRequested();
     void reminderSettingsRequested();
+    void readingModeToggled(bool on);
     void hiddenToTray();
 
 protected:
@@ -50,6 +61,7 @@ private:
     QFrame *m_pauseBanner = nullptr;
     QLabel *m_pauseBannerText = nullptr;
     QLabel *m_reminderStatus = nullptr;
+    QPushButton *m_readingModeButton = nullptr;
     QMap<StatusRow, QLabel *> m_statusRows;
     bool m_hideOnClose = true;
 };

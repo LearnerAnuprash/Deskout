@@ -1,5 +1,6 @@
 #pragma once
 
+#include "app/readingmode.h"
 #include "core/pausemanager.h"
 #include "core/reminderengine.h"
 #include "platform/activity/activitymonitor.h"
@@ -41,6 +42,9 @@ private:
     void waitForTray();
     void enableTray();
     void refreshStatus();
+    void setReadingMode(bool on);
+    void syncReadingModeUi();
+    QWidget *dialogParent() const;
 
     // Declaration order matters: the engine's hooks read pause and activity.
     PauseManager m_pause;
@@ -48,6 +52,7 @@ private:
     ReminderEngine m_reminders;
     GlobalHotkey m_hotkey;
     Notifier m_notifier;
+    ReadingMode m_readingMode;
     std::unique_ptr<ReminderAlertController> m_alerts;
     std::unique_ptr<MainWindow> m_window;
     std::unique_ptr<TrayController> m_tray;

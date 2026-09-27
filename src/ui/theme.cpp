@@ -104,6 +104,9 @@ QLabel#PageTitle { font-size: 22px; font-weight: 600; }
 QLabel#Muted { color: %7; }
 QFrame#Card { background: %8; border: 1px solid %2; border-radius: 10px; }
 QLabel#CardTitle { font-weight: 600; }
+QPushButton#ReadingModeButton { background: %8; border: 1px solid %2; border-radius: 4px; padding: 5px; }
+QPushButton#ReadingModeButton:hover { border-color: %5; }
+QPushButton#ReadingModeButton:checked { background: %5; border-color: %5; color: %6; }
 QToolButton#DayToggle { background: %8; border: 1px solid %2; border-radius: 6px; padding: 4px 8px; }
 QToolButton#DayToggle:checked { background: %5; border-color: %5; color: %6; }
 QFrame#PauseBanner { background: %9; border-radius: 8px; }

@@ -8,10 +8,10 @@ Deskout lives in the system tray. It reminds you to rest your eyes, drink water 
 
 Get the latest version for your platform:
 
-- 🪟 [Windows (.exe)](https://github.com/LearnerAnuprash/Deskout/releases/download/v1.0.0/Deskout-1.0.0-windows-x64-setup.exe)
-- 🐧 [Linux (.AppImage)](https://github.com/LearnerAnuprash/Deskout/releases/download/v1.0.0/Deskout-1.0.0-x86_64.AppImage)
-- 🐧 [Linux (.deb)](https://github.com/LearnerAnuprash/Deskout/releases/download/v1.0.0/deskout_1.0.0_amd64.deb)
-- 🍎 [macOS (.dmg)](https://github.com/LearnerAnuprash/Deskout/releases/download/v1.0.0/Deskout-1.0.0-macos.dmg)
+-  [Windows (.exe)](https://github.com/LearnerAnuprash/Deskout/releases/download/v1.0.0/Deskout-1.0.0-windows-x64-setup.exe)
+-  [Linux (.AppImage)](https://github.com/LearnerAnuprash/Deskout/releases/download/v1.0.0/Deskout-1.0.0-x86_64.AppImage)
+-  [Linux (.deb)](https://github.com/LearnerAnuprash/Deskout/releases/download/v1.0.0/deskout_1.0.0_amd64.deb)
+-  [macOS (.dmg)](https://github.com/LearnerAnuprash/Deskout/releases/download/v1.0.0/Deskout-1.0.0-macos.dmg)
 
 ## Reminders
 

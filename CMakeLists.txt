@@ -31,6 +31,8 @@ add_library(deskout_lib STATIC
     src/app/reminderalerts.h
     src/core/alert.h
     src/core/commands.h
+    src/core/dailyupdates.cpp
+    src/core/dailyupdates.h
     src/core/database.cpp
     src/core/database.h
     src/core/docsstore.cpp
@@ -81,6 +83,8 @@ add_library(deskout_lib STATIC
     src/ui/notespage.h
     src/ui/notifier.cpp
     src/ui/notifier.h
+    src/ui/recapdialog.cpp
+    src/ui/recapdialog.h
     src/ui/reminderspage.cpp
     src/ui/richtextedit.cpp
     src/ui/richtextedit.h
@@ -97,6 +101,8 @@ add_library(deskout_lib STATIC
     src/ui/timeformat.h
     src/ui/traycontroller.cpp
     src/ui/traycontroller.h
+    src/ui/updatespage.cpp
+    src/ui/updatespage.h
 )
 
 target_include_directories(deskout_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)

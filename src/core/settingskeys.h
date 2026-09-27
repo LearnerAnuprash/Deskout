@@ -31,6 +31,10 @@ inline constexpr char FocusMiniMode[] = "focus/miniMode";
 inline constexpr char FocusWindowGeometry[] = "focus/windowGeometry";
 inline constexpr char FocusMiniGeometry[] = "focus/miniGeometry";
 
+// Morning recap of the last daily update.
+inline constexpr char UpdatesRecapEnabled[] = "updates/recapEnabled";
+inline constexpr char UpdatesRecapShownOn[] = "updates/recapShownOn";
+
 inline constexpr char UiTheme[] = "ui/theme";
 inline constexpr char UiTrayHintShown[] = "ui/trayHintShown";
 inline constexpr char UiWindowGeometry[] = "ui/windowGeometry";

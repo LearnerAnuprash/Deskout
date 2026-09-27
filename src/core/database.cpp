@@ -60,6 +60,15 @@ const QStringList Migrations[] = {
                        " updated_at INTEGER NOT NULL)"),
         QStringLiteral("CREATE INDEX docs_updated ON docs(updated_at)"),
     },
+    // 4: daily updates, one per local calendar day
+    {
+        QStringLiteral("CREATE TABLE daily_updates ("
+                       " day TEXT PRIMARY KEY,"      // yyyy-MM-dd, local date
+                       " done TEXT NOT NULL DEFAULT '',"
+                       " todo TEXT NOT NULL DEFAULT '',"
+                       " created_at INTEGER NOT NULL," // ms since epoch, UTC
+                       " updated_at INTEGER NOT NULL)"),
+    },
 };
 
 bool fail(QString *error, const QString &text)

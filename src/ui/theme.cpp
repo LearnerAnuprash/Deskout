@@ -141,6 +141,10 @@ QFrame#ToolbarRule, QFrame#ToolbarSeparator { background: %2; border: none; }
 QTextEdit#DocPage { background: %8; border: none; font-size: 15px; }
 QTreeWidget#DocsList { background: transparent; border: none; outline: 0; }
 QTreeWidget#DocsList::item { padding: 5px 2px; }
+QLabel#SectionTitle { font-size: 15px; font-weight: 600; }
+QLabel#FieldLabel { color: %7; font-weight: 600; }
+QLabel#RecapText { font-size: 14px; }
+QScrollArea#PageScroll, QWidget#PageScrollContent { background: transparent; }
 QFrame#PauseBanner { background: %9; border-radius: 8px; }
 QFrame#PauseBanner QLabel { color: %10; font-weight: 600; }
 )")

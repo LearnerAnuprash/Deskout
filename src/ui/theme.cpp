@@ -121,6 +121,10 @@ QPushButton#PrimaryButton {
 QPushButton#PrimaryButton:hover { background: %11; border-color: %11; }
 QPushButton#PrimaryButton:disabled { background: %2; border-color: %2; color: %7; }
 QLabel#SessionCompleted { color: %5; font-weight: 600; }
+QListWidget#NotesList { background: transparent; border: none; outline: 0; }
+QSplitter#NotesSplitter::handle { background: %2; }
+QLineEdit#NoteTitle { font-size: 20px; font-weight: 600; border: none; background: transparent; padding: 4px 0; }
+QPlainTextEdit#NoteBody { font-size: 14px; border: none; background: transparent; }
 QFrame#PauseBanner { background: %9; border-radius: 8px; }
 QFrame#PauseBanner QLabel { color: %10; font-weight: 600; }
 )")

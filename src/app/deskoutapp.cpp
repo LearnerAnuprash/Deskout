@@ -56,14 +56,16 @@ void DeskoutApp::start(bool minimized)
 
     QString dbError;
     if (!Database::open(Database::defaultPath(), &dbError))
-        qWarning("Deskout: database unavailable, focus history won't be saved: %s", qPrintable(dbError));
+        qWarning("Deskout: database unavailable, notes and focus history won't be saved: %s",
+                 qPrintable(dbError));
 
     m_reminders.start();
     m_alertCenter = std::make_unique<AlertCenter>(&m_activity, &m_notifier, &m_pause);
     m_reminderAlerts = std::make_unique<ReminderAlertController>(&m_reminders, m_alertCenter.get(), &m_notifier);
     m_focusAlerts = std::make_unique<FocusAlertController>(&m_focus, m_alertCenter.get(), &m_notifier);
 
-    m_window = std::make_unique<MainWindow>(&m_pause, &m_reminders, &m_focus, &m_focusLog);
+    m_window = std::make_unique<MainWindow>(
+        MainWindow::Context{&m_pause, &m_reminders, &m_focus, &m_focusLog, &m_notes});
     connect(m_window.get(), &MainWindow::settingsRequested, this, [this] { showSettings(); });
     connect(m_window.get(), &MainWindow::reminderSettingsRequested, this,
             [this] { showSettings(SettingsDialog::Tab::Reminders); });

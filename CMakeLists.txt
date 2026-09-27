@@ -39,6 +39,8 @@ add_library(deskout_lib STATIC
     src/core/focuslog.h
     src/core/focustimer.cpp
     src/core/focustimer.h
+    src/core/notesstore.cpp
+    src/core/notesstore.h
     src/core/pausemanager.cpp
     src/core/pausemanager.h
     src/core/reminderengine.cpp
@@ -69,6 +71,8 @@ add_library(deskout_lib STATIC
     src/ui/fullscreenalarm.h
     src/ui/mainwindow.cpp
     src/ui/mainwindow.h
+    src/ui/notespage.cpp
+    src/ui/notespage.h
     src/ui/notifier.cpp
     src/ui/notifier.h
     src/ui/reminderspage.cpp
@@ -81,6 +85,8 @@ add_library(deskout_lib STATIC
     src/ui/theme.h
     src/ui/timedisplay.cpp
     src/ui/timedisplay.h
+    src/ui/timeformat.cpp
+    src/ui/timeformat.h
     src/ui/traycontroller.cpp
     src/ui/traycontroller.h
 )

@@ -5,6 +5,7 @@
 
 class FocusLog;
 class FocusTimer;
+class NotesStore;
 class PauseManager;
 class QFrame;
 class QLabel;
@@ -31,8 +32,17 @@ public:
         ReadingMode,
     };
 
-    MainWindow(PauseManager *pause, ReminderEngine *reminders, FocusTimer *focus, FocusLog *focusLog,
-               QWidget *parent = nullptr);
+    // The app-level objects the pages show and control.
+    struct Context
+    {
+        PauseManager *pause;
+        ReminderEngine *reminders;
+        FocusTimer *focus;
+        FocusLog *focusLog;
+        NotesStore *notes;
+    };
+
+    explicit MainWindow(const Context &context, QWidget *parent = nullptr);
 
     // When true (tray available), closing the window hides it instead of
     // quitting.

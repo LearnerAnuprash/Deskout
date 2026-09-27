@@ -15,7 +15,10 @@ deskout_add_test(tst_reminders)
 deskout_add_test(tst_reminderengine)
 deskout_add_test(tst_readingmode)
 deskout_add_test(tst_focustimer)
+deskout_add_test(tst_database)
 deskout_add_test(tst_focuslog)
+deskout_add_test(tst_notesstore)
+deskout_add_test(tst_notespage)
 deskout_add_test(tst_alertcenter)
 # Alarms open windows and send notifications: keep both off the real desktop.
 set_tests_properties(tst_alertcenter PROPERTIES ENVIRONMENT

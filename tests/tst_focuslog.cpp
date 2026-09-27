@@ -2,7 +2,6 @@
 #include "core/focuslog.h"
 
 #include <QSignalSpy>
-#include <QSqlQuery>
 #include <QTemporaryDir>
 #include <QTest>
 
@@ -42,15 +41,6 @@ private Q_SLOTS:
     void cleanup()
     {
         Database::close();
-    }
-
-    void createsSchema()
-    {
-        QSqlQuery query(Database::connection());
-        QVERIFY(query.exec(QStringLiteral("PRAGMA user_version")) && query.next());
-        QCOMPARE(query.value(0).toInt(), 1);
-        QVERIFY(query.exec(QStringLiteral("SELECT COUNT(*) FROM focus_sessions")) && query.next());
-        QCOMPARE(query.value(0).toInt(), 0);
     }
 
     void recordsAndSummarises()
@@ -117,16 +107,6 @@ private Q_SLOTS:
         QVERIFY(!log.record(session(QDateTime(m_day, QTime(9, 0)), 25, true)));
         QCOMPARE(log.recent(5).size(), 0);
         QCOMPARE(log.summaryFor(m_day).completed, 0);
-    }
-
-    void refusesNewerSchema()
-    {
-        QSqlQuery(Database::connection()).exec(QStringLiteral("PRAGMA user_version = 99"));
-        Database::close();
-        QString error;
-        QVERIFY(!Database::open(m_path, &error));
-        QVERIFY(error.contains(QLatin1String("newer version")));
-        QVERIFY(!Database::isOpen());
     }
 };
 

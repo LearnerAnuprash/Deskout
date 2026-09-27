@@ -37,6 +37,16 @@ const QStringList Migrations[] = {
                        " topic TEXT NOT NULL DEFAULT '')"),
         QStringLiteral("CREATE INDEX focus_sessions_day ON focus_sessions(day)"),
     },
+    // 2: notes
+    {
+        QStringLiteral("CREATE TABLE notes ("
+                       " id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                       " title TEXT NOT NULL DEFAULT '',"
+                       " body TEXT NOT NULL DEFAULT '',"
+                       " created_at INTEGER NOT NULL," // ms since epoch, UTC
+                       " updated_at INTEGER NOT NULL)"),
+        QStringLiteral("CREATE INDEX notes_updated ON notes(updated_at)"),
+    },
 };
 
 bool fail(QString *error, const QString &text)
@@ -79,6 +89,11 @@ bool migrate(QSqlDatabase &db, QString *error)
 } // namespace
 
 namespace Database {
+
+int schemaVersion()
+{
+    return int(std::size(Migrations));
+}
 
 QString defaultPath()
 {

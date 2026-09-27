@@ -6,7 +6,11 @@ Deskout lives in the system tray. It reminds you to rest your eyes, drink water 
 
 ## Download
 
-Get the latest version for Windows, macOS or Linux from the [Releases page](https://github.com/LearnerAnuprash/Deskout/releases/latest).
+Get the latest version for Windows, macOS or Linux :
+![WINDOWS DOWNLOAD](https://github.com/LearnerAnuprash/Deskout/releases/download/v1.0.0/Deskout-1.0.0-windows-x64-setup.exe)
+![LINUX DOWNLOAD AppImage](https://github.com/LearnerAnuprash/Deskout/releases/download/v1.0.0/Deskout-1.0.0-x86_64.AppImage)
+![LINUX DOWNLOAD .deb](https://github.com/LearnerAnuprash/Deskout/releases/download/v1.0.0/deskout_1.0.0_amd64.deb)
+![MAC DOWNLOAD](https://github.com/LearnerAnuprash/Deskout/releases/download/v1.0.0/Deskout-1.0.0-macos.dmg)
 
 ## Reminders
 

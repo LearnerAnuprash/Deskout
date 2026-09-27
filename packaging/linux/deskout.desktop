@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Deskout
+Comment=Break, hydration and focus reminders
+Exec=deskout
+Icon=deskout
+Terminal=false
+Categories=Utility;
+Keywords=break;reminder;focus;timer;notes;

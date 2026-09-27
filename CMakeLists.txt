@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(Deskout
-    VERSION 0.1.0
+    VERSION 1.0.0
     DESCRIPTION "Desktop wellness and focus companion"
     LANGUAGES CXX)
 
@@ -160,12 +160,19 @@ qt_add_resources(deskout "deskout_resources"
         resources/gnome-extension/extension.js)
 target_link_libraries(deskout PRIVATE deskout_lib)
 
-if(APPLE)
+# Icon shown by Explorer and Finder (the tray and window icons come from the SVG).
+if(WIN32)
+    target_sources(deskout PRIVATE packaging/windows/deskout.rc)
+elseif(APPLE)
+    set(deskout_icns packaging/macos/deskout.icns)
+    target_sources(deskout PRIVATE ${deskout_icns})
+    set_source_files_properties(${deskout_icns} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
     set_target_properties(deskout PROPERTIES OUTPUT_NAME Deskout)
 endif()
 set_target_properties(deskout PROPERTIES
     MACOSX_BUNDLE_GUI_IDENTIFIER app.deskout.Deskout
     MACOSX_BUNDLE_BUNDLE_NAME Deskout
+    MACOSX_BUNDLE_ICON_FILE deskout.icns
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION})
 
@@ -173,6 +180,56 @@ include(GNUInstallDirs)
 install(TARGETS deskout
     BUNDLE DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+# Release packages: `cpack` builds a Windows installer (.exe) or a macOS disk
+# image (.dmg). Linux packages are made by packaging/linux/package.sh.
+if(WIN32 OR APPLE)
+    if(WIN32)
+        set(deskout_deploy_options --no-compiler-runtime --no-translations --no-opengl-sw
+                                   --no-system-d3d-compiler)
+    endif()
+    # Copy the Qt libraries and plugins next to the app (windeployqt / macdeployqt).
+    qt_generate_deploy_app_script(
+        TARGET deskout
+        OUTPUT_SCRIPT deskout_deploy_script
+        DEPLOY_TOOL_OPTIONS ${deskout_deploy_options})
+    install(SCRIPT ${deskout_deploy_script})
+endif()
+
+if(WIN32)
+    # Ship the MSVC runtime DLLs with the app so no separate redistributable is needed.
+    include(InstallRequiredSystemLibraries)
+
+    set(CPACK_GENERATOR INNOSETUP)
+    set(CPACK_PACKAGE_EXECUTABLES deskout Deskout)
+    set(CPACK_CREATE_DESKTOP_LINKS deskout)
+    set(CPACK_INNOSETUP_RUN_EXECUTABLES deskout)
+    set(CPACK_INNOSETUP_ICON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/packaging/windows/deskout.ico)
+    set(CPACK_INNOSETUP_USE_MODERN_WIZARD ON)
+    set(CPACK_INNOSETUP_IGNORE_LICENSE_PAGE ON)
+    # A fixed id lets a newer installer replace the installed version.
+    set(CPACK_INNOSETUP_SETUP_AppId Deskout)
+    set(CPACK_PACKAGE_FILE_NAME Deskout-${PROJECT_VERSION}-windows-x64-setup)
+elseif(APPLE)
+    # Deploying rewrites the binaries, so sign the bundle again (ad hoc, no
+    # developer certificate). Apple Silicon refuses to run unsigned code.
+    install(CODE [[
+        execute_process(
+            COMMAND codesign --force --deep --sign - "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/Deskout.app"
+            COMMAND_ERROR_IS_FATAL ANY)
+    ]])
+
+    set(CPACK_GENERATOR DragNDrop)
+    set(CPACK_DMG_VOLUME_NAME Deskout)
+    set(CPACK_PACKAGE_FILE_NAME Deskout-${PROJECT_VERSION}-macos)
+endif()
+
+if(WIN32 OR APPLE)
+    set(CPACK_PACKAGE_NAME Deskout)
+    set(CPACK_PACKAGE_VENDOR Deskout)
+    set(CPACK_PACKAGE_INSTALL_DIRECTORY Deskout)
+    include(CPack)
+endif()
 
 if(DESKOUT_BUILD_TESTS)
     enable_testing()

@@ -21,12 +21,23 @@ find_package(Qt6 6.4 REQUIRED COMPONENTS Widgets Network Svg)
 add_library(deskout_lib STATIC
     src/app/deskoutapp.cpp
     src/app/deskoutapp.h
+    src/app/reminderalerts.cpp
+    src/app/reminderalerts.h
     src/core/commands.h
+    src/core/eyeexercises.cpp
+    src/core/eyeexercises.h
     src/core/pausemanager.cpp
     src/core/pausemanager.h
+    src/core/reminderengine.cpp
+    src/core/reminderengine.h
+    src/core/reminders.cpp
+    src/core/reminders.h
     src/core/settingskeys.h
     src/core/singleinstance.cpp
     src/core/singleinstance.h
+    src/platform/activity/activitybackend.h
+    src/platform/activity/activitymonitor.cpp
+    src/platform/activity/activitymonitor.h
     src/platform/autostart.cpp
     src/platform/autostart.h
     src/platform/hotkey/globalhotkey.cpp
@@ -36,8 +47,16 @@ add_library(deskout_lib STATIC
     src/platform/hotkey/keyformat.h
     src/ui/appicon.cpp
     src/ui/appicon.h
+    src/ui/fullscreenalarm.cpp
+    src/ui/fullscreenalarm.h
     src/ui/mainwindow.cpp
     src/ui/mainwindow.h
+    src/ui/notifier.cpp
+    src/ui/notifier.h
+    src/ui/reminderspage.cpp
+    src/ui/reminderspage.h
+    src/ui/remindersettingspage.cpp
+    src/ui/remindersettingspage.h
     src/ui/settingsdialog.cpp
     src/ui/settingsdialog.h
     src/ui/theme.cpp
@@ -56,19 +75,25 @@ else()
 endif()
 
 if(WIN32)
-    target_sources(deskout_lib PRIVATE src/platform/hotkey/hotkeybackend_win.cpp)
-    target_link_libraries(deskout_lib PUBLIC user32)
+    target_sources(deskout_lib PRIVATE
+        src/platform/activity/activity_win.cpp
+        src/platform/hotkey/hotkeybackend_win.cpp)
+    target_link_libraries(deskout_lib PUBLIC user32 shell32)
 elseif(APPLE)
-    target_sources(deskout_lib PRIVATE src/platform/hotkey/hotkeybackend_mac.cpp)
-    target_link_libraries(deskout_lib PUBLIC "-framework Carbon")
+    target_sources(deskout_lib PRIVATE
+        src/platform/activity/activity_mac.cpp
+        src/platform/hotkey/hotkeybackend_mac.cpp)
+    target_link_libraries(deskout_lib PUBLIC "-framework Carbon" "-framework ApplicationServices")
 else()
     find_package(X11 REQUIRED)
+    find_package(Qt6 REQUIRED COMPONENTS DBus)
     target_sources(deskout_lib PRIVATE
+        src/platform/activity/activity_linux.cpp
         src/platform/hotkey/hotkeybackend_linux.cpp
         src/platform/hotkey/hotkeybackend_gnome.cpp
         src/platform/hotkey/hotkeybackend_x11.cpp
         src/platform/hotkey/linuxbackends.h)
-    target_link_libraries(deskout_lib PUBLIC X11::X11)
+    target_link_libraries(deskout_lib PUBLIC X11::X11 Qt6::DBus ${CMAKE_DL_LIBS})
 endif()
 
 qt_add_executable(deskout WIN32 MACOSX_BUNDLE src/main.cpp)

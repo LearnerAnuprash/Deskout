@@ -3,6 +3,7 @@
 #include "core/pausemanager.h"
 #include "core/settingskeys.h"
 #include "ui/appicon.h"
+#include "ui/reminderspage.h"
 
 #include <QCloseEvent>
 #include <QFormLayout>
@@ -28,9 +29,10 @@ QLabel *makeLabel(const QString &text, const char *objectName = nullptr)
 
 } // namespace
 
-MainWindow::MainWindow(PauseManager *pause, QWidget *parent)
+MainWindow::MainWindow(PauseManager *pause, ReminderEngine *reminders, QWidget *parent)
     : QMainWindow(parent)
     , m_pause(pause)
+    , m_reminders(reminders)
 {
     setWindowTitle(QStringLiteral("Deskout"));
     setWindowIcon(AppIcon::icon());
@@ -50,9 +52,9 @@ MainWindow::MainWindow(PauseManager *pause, QWidget *parent)
 
     m_pages = new QStackedWidget;
     m_pages->addWidget(buildHomePage());
-    m_pages->addWidget(buildPlaceholderPage(tr("Reminders"),
-        tr("Eye break, water and walk reminders with custom intervals, days and "
-           "working hours, as full-screen alarms or notifications."), 1));
+    auto *remindersPage = new RemindersPage(m_reminders);
+    connect(remindersPage, &RemindersPage::editRequested, this, &MainWindow::reminderSettingsRequested);
+    m_pages->addWidget(remindersPage);
     m_pages->addWidget(buildPlaceholderPage(tr("Focus Timer"),
         tr("A 25-minute research timer you can pin on top, resize and shrink to a mini view."), 3));
     m_pages->addWidget(buildPlaceholderPage(tr("Notes"),
@@ -158,13 +160,20 @@ QWidget *MainWindow::buildHomePage()
     form->setHorizontalSpacing(24);
     form->setVerticalSpacing(8);
     m_reminderStatus = makeLabel(QString());
-    m_hotkeyStatus = makeLabel(QString());
-    m_autoStartStatus = makeLabel(QString());
-    m_trayStatus = makeLabel(QString());
     form->addRow(tr("Reminders"), m_reminderStatus);
-    form->addRow(tr("Pause shortcut"), m_hotkeyStatus);
-    form->addRow(tr("Launch at login"), m_autoStartStatus);
-    form->addRow(tr("Tray icon"), m_trayStatus);
+    const QList<std::pair<StatusRow, QString>> rows = {
+        {StatusRow::Hotkey, tr("Pause shortcut")},
+        {StatusRow::AutoStart, tr("Launch at login")},
+        {StatusRow::Tray, tr("Tray icon")},
+        {StatusRow::Notifications, tr("Notifications")},
+        {StatusRow::IdleDetection, tr("Away detection")},
+        {StatusRow::FullscreenDetection, tr("Meeting detection")},
+    };
+    for (const auto &[row, title] : rows) {
+        QLabel *value = makeLabel(QString());
+        m_statusRows.insert(row, value);
+        form->addRow(title, value);
+    }
     cardLayout->addLayout(form);
     layout->addWidget(card);
     layout->addStretch(1);
@@ -192,17 +201,8 @@ void MainWindow::refreshPauseState()
     m_reminderStatus->setText(status);
 }
 
-void MainWindow::setHotkeyStatus(const QString &text)
+void MainWindow::setStatus(StatusRow row, const QString &text)
 {
-    m_hotkeyStatus->setText(text);
-}
-
-void MainWindow::setAutoStartStatus(bool enabled)
-{
-    m_autoStartStatus->setText(enabled ? tr("On") : tr("Off"));
-}
-
-void MainWindow::setTrayStatus(const QString &text)
-{
-    m_trayStatus->setText(text);
+    if (QLabel *label = m_statusRows.value(row))
+        label->setText(text);
 }

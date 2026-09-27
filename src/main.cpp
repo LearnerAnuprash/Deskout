@@ -10,6 +10,14 @@
 
 int main(int argc, char *argv[])
 {
+#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
+    // Full-screen alarms and always-on-top windows need X11 window semantics:
+    // on GNOME, Wayland clients can't keep a window above others. Run through
+    // XWayland unless the user picked a platform explicitly.
+    if (qEnvironmentVariableIsEmpty("QT_QPA_PLATFORM") && !qEnvironmentVariableIsEmpty("DISPLAY"))
+        qputenv("QT_QPA_PLATFORM", "xcb");
+#endif
+
     QApplication app(argc, argv);
     QApplication::setOrganizationName(QStringLiteral("Deskout"));
     QApplication::setOrganizationDomain(QStringLiteral("deskout.app"));

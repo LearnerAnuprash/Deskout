@@ -10,6 +10,7 @@ inline constexpr char TogglePause[] = "toggle-pause";
 inline constexpr char Pause[] = "pause";
 inline constexpr char Resume[] = "resume";
 inline constexpr char ToggleReadingMode[] = "toggle-reading-mode";
+inline constexpr char ToggleFocus[] = "toggle-focus";
 inline constexpr char Quit[] = "quit";
 
 } // namespace Commands

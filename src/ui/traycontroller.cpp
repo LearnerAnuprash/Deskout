@@ -1,13 +1,15 @@
 #include "ui/traycontroller.h"
 
+#include "core/focustimer.h"
 #include "core/pausemanager.h"
 #include "ui/appicon.h"
 
 #include <QMenu>
 
-TrayController::TrayController(PauseManager *pause, QObject *parent)
+TrayController::TrayController(PauseManager *pause, FocusTimer *focus, QObject *parent)
     : QObject(parent)
     , m_pause(pause)
+    , m_focus(focus)
     , m_menu(new QMenu)
 {
     m_menu->addAction(tr("Open Deskout"), this, &TrayController::openRequested);
@@ -25,6 +27,11 @@ TrayController::TrayController(PauseManager *pause, QObject *parent)
     m_resumeAction = m_menu->addAction(tr("Resume reminders"), m_pause, &PauseManager::resume);
 
     m_menu->addSeparator();
+    m_focusAction = m_menu->addAction(QString(), this, &TrayController::onFocusActionTriggered);
+    m_focusStopAction = m_menu->addAction(tr("Stop focus session"), m_focus, &FocusTimer::stop);
+    m_menu->addAction(tr("Show focus timer"), this, &TrayController::focusWindowRequested);
+
+    m_menu->addSeparator();
     m_readingModeAction = m_menu->addAction(tr("Reading mode (grayscale)"));
     m_readingModeAction->setCheckable(true);
     connect(m_readingModeAction, &QAction::triggered, this, &TrayController::readingModeToggled);
@@ -40,8 +47,9 @@ TrayController::TrayController(PauseManager *pause, QObject *parent)
             Q_EMIT openRequested();
     });
     connect(m_pause, &PauseManager::pausedChanged, this, &TrayController::refresh);
-    // A timed pause's label ("until 14:30") only changes on state changes,
-    // but refresh on open too so it is never stale.
+    connect(m_focus, &FocusTimer::stateChanged, this, &TrayController::refreshFocus);
+    // A timed pause's label ("until 14:30") and the focus time left change
+    // without a state change, so refresh on open too.
     connect(m_menu, &QMenu::aboutToShow, this, &TrayController::refresh);
     refresh();
 }
@@ -83,4 +91,32 @@ void TrayController::refresh()
     m_pauseMenu->setTitle(paused ? tr("Change pause") : tr("Pause all reminders"));
     m_tray.setIcon(AppIcon::icon(paused));
     m_tray.setToolTip(QStringLiteral("Deskout — %1").arg(status));
+    refreshFocus();
+}
+
+void TrayController::refreshFocus()
+{
+    const QString left = FocusTimer::formatSeconds(m_focus->remainingSeconds());
+    switch (m_focus->state()) {
+    case FocusTimer::State::Running:
+        m_focusAction->setText(tr("Pause focus session (%1 left)").arg(left));
+        break;
+    case FocusTimer::State::Paused:
+        m_focusAction->setText(tr("Resume focus session (%1 left)").arg(left));
+        break;
+    case FocusTimer::State::Idle:
+    case FocusTimer::State::Finished:
+        m_focusAction->setText(tr("Start focus session (%1 min)").arg(m_focus->lastMinutes()));
+        break;
+    }
+    m_focusStopAction->setVisible(m_focus->isActive());
+}
+
+void TrayController::onFocusActionTriggered()
+{
+    const bool starting = !m_focus->isActive();
+    m_focus->toggle();
+    // Starting from the tray: show the timer so the session is visible.
+    if (starting)
+        Q_EMIT focusWindowRequested();
 }

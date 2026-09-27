@@ -3,6 +3,7 @@
 #include "core/pausemanager.h"
 #include "core/settingskeys.h"
 #include "ui/appicon.h"
+#include "ui/focuspage.h"
 #include "ui/reminderspage.h"
 
 #include <QCloseEvent>
@@ -29,7 +30,8 @@ QLabel *makeLabel(const QString &text, const char *objectName = nullptr)
 
 } // namespace
 
-MainWindow::MainWindow(PauseManager *pause, ReminderEngine *reminders, QWidget *parent)
+MainWindow::MainWindow(PauseManager *pause, ReminderEngine *reminders, FocusTimer *focus, FocusLog *focusLog,
+                       QWidget *parent)
     : QMainWindow(parent)
     , m_pause(pause)
     , m_reminders(reminders)
@@ -55,8 +57,9 @@ MainWindow::MainWindow(PauseManager *pause, ReminderEngine *reminders, QWidget *
     auto *remindersPage = new RemindersPage(m_reminders);
     connect(remindersPage, &RemindersPage::editRequested, this, &MainWindow::reminderSettingsRequested);
     m_pages->addWidget(remindersPage);
-    m_pages->addWidget(buildPlaceholderPage(tr("Focus Timer"),
-        tr("A 25-minute research timer you can pin on top, resize and shrink to a mini view."), 3));
+    auto *focusPage = new FocusPage(focus, focusLog);
+    connect(focusPage, &FocusPage::popOutRequested, this, &MainWindow::focusWindowRequested);
+    m_pages->addWidget(focusPage);
     m_pages->addWidget(buildPlaceholderPage(tr("Notes"),
         tr("Quick memos you can create, edit and delete."), 4));
     m_pages->addWidget(buildPlaceholderPage(tr("Topic Docs"),

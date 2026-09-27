@@ -1,7 +1,6 @@
 #include "ui/fullscreenalarm.h"
 
 #include "core/eyeexercises.h"
-#include "core/reminders.h"
 #include "ui/appicon.h"
 
 #include <QCloseEvent>
@@ -119,9 +118,9 @@ private:
     bool m_allowClose = false;
 };
 
-FullScreenAlarm::FullScreenAlarm(const QString &reminderId, QObject *parent)
+FullScreenAlarm::FullScreenAlarm(const Alert &alert, QObject *parent)
     : QObject(parent)
-    , m_reminderId(reminderId)
+    , m_alert(alert)
 {
     m_exerciseTimer.setInterval(1000);
     connect(&m_exerciseTimer, &QTimer::timeout, this, &FullScreenAlarm::tickExercise);
@@ -187,7 +186,6 @@ void FullScreenAlarm::dismiss()
 
 QWidget *FullScreenAlarm::buildPromptPage()
 {
-    const ReminderTexts texts = Reminders::texts(m_reminderId);
     auto *page = new QWidget;
     auto *layout = new QVBoxLayout(page);
     layout->setSpacing(18);
@@ -197,43 +195,44 @@ QWidget *FullScreenAlarm::buildPromptPage()
     icon->setAlignment(Qt::AlignCenter);
     icon->setPixmap(AppIcon::icon().pixmap(96, 96));
     layout->addWidget(icon);
-    layout->addWidget(label(texts.title, "AlarmTitle"));
-    layout->addWidget(label(texts.body, "AlarmBody"));
+    layout->addWidget(label(m_alert.title, "AlarmTitle"));
+    layout->addWidget(label(m_alert.body, "AlarmBody"));
     layout->addSpacing(20);
 
     auto *row = new QHBoxLayout;
     row->setSpacing(14);
     row->addStretch(1);
-    auto *confirm = button(texts.confirmLabel, "AlarmPrimary");
-    auto *snooze5 = button(tr("Snooze 5 min"));
-    auto *snooze10 = button(tr("Snooze 10 min"));
+    auto *confirm = button(m_alert.confirmLabel, "AlarmPrimary");
+    confirm->setProperty("actionKey", QLatin1String(Alert::ConfirmKey));
+    connect(confirm, &QPushButton::clicked, this, &FullScreenAlarm::onConfirm);
     row->addWidget(confirm);
-    row->addWidget(snooze5);
-    row->addWidget(snooze10);
+    m_promptButtons = {confirm};
+    for (const AlertAction &action : std::as_const(m_alert.actions)) {
+        auto *extra = button(action.label);
+        extra->setProperty("actionKey", action.key);
+        connect(extra, &QPushButton::clicked, this, [this, key = action.key] {
+            m_answered = true;
+            Q_EMIT responded(key);
+            finish();
+        });
+        row->addWidget(extra);
+        m_promptButtons << extra;
+    }
     row->addStretch(1);
     layout->addLayout(row);
     layout->addStretch(4);
 
-    auto *disable = button(tr("Disable full-screen reminder"), "AlarmLink");
-    disable->setToolTip(tr("Show this reminder as a notification from now on"));
+    auto *disable = button(m_alert.disableFullScreenLabel, "AlarmLink");
+    disable->setToolTip(tr("Show this as a notification from now on"));
     auto *disableRow = new QHBoxLayout;
     disableRow->addStretch(1);
     disableRow->addWidget(disable);
     disableRow->addStretch(1);
     layout->addLayout(disableRow);
+    m_promptButtons << disable;
 
-    m_promptButtons = {confirm, snooze5, snooze10, disable};
-
-    connect(confirm, &QPushButton::clicked, this, &FullScreenAlarm::onConfirm);
-    connect(snooze5, &QPushButton::clicked, this, [this] {
-        Q_EMIT snoozed(5);
-        finish();
-    });
-    connect(snooze10, &QPushButton::clicked, this, [this] {
-        Q_EMIT snoozed(10);
-        finish();
-    });
     connect(disable, &QPushButton::clicked, this, [this] {
+        m_answered = true;
         Q_EMIT fullScreenDisabled();
         finish();
     });
@@ -275,11 +274,10 @@ QWidget *FullScreenAlarm::buildExercisePage()
 
 QWidget *FullScreenAlarm::buildSecondaryContent()
 {
-    const ReminderTexts texts = Reminders::texts(m_reminderId);
     auto *page = new QWidget;
     auto *layout = new QVBoxLayout(page);
     layout->addStretch(1);
-    layout->addWidget(label(texts.title, "AlarmTitle"));
+    layout->addWidget(label(m_alert.title, "AlarmTitle"));
     layout->addWidget(label(tr("Use the main screen to continue."), "AlarmBody"));
     layout->addStretch(1);
     return page;
@@ -287,8 +285,9 @@ QWidget *FullScreenAlarm::buildSecondaryContent()
 
 void FullScreenAlarm::onConfirm()
 {
-    Q_EMIT confirmed();
-    if (m_reminderId == QLatin1String(ReminderIds::Eye))
+    m_answered = true;
+    Q_EMIT responded(QLatin1String(Alert::ConfirmKey));
+    if (m_alert.eyeExercise)
         startExercise();
     else
         finish();

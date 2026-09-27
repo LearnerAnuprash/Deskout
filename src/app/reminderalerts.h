@@ -1,43 +1,29 @@
 #pragma once
 
-#include <QHash>
 #include <QObject>
-#include <QPointer>
-#include <QStringList>
 
-class ActivityMonitor;
-class FullScreenAlarm;
+class AlertCenter;
 class Notifier;
-class PauseManager;
 class ReminderEngine;
 
-// Decides how a due reminder reaches the user and feeds the response back
-// to the engine:
-//  - full-screen alarm when the reminder wants one and nothing forbids it,
-//  - a notification when it is notification-only or another app is
-//    full-screen (call, presentation, video),
-//  - alarms queue up one at a time; a global pause clears them.
+// Turns due reminders into alerts and feeds the user's response back to
+// the engine. How the alert is shown is AlertCenter's decision.
 class ReminderAlertController : public QObject
 {
     Q_OBJECT
 
 public:
-    ReminderAlertController(ReminderEngine *engine, ActivityMonitor *activity, Notifier *notifier,
-                            PauseManager *pause, QObject *parent = nullptr);
-    ~ReminderAlertController() override;
+    ReminderAlertController(ReminderEngine *engine, AlertCenter *alerts, Notifier *notifier,
+                            QObject *parent = nullptr);
 
 private:
     void onDue(const QString &id);
-    void showNextAlarm();
-    void notify(const QString &id, const QString &note = QString());
-    void onPausedChanged(bool paused);
-    void onNotificationAction(uint notificationId, const QString &actionKey);
-    void disableFullScreen(const QString &id);
+    void onResponded(const QString &key, const QString &actionKey);
+    void onNotified(const QString &key);
+    void onInterrupted(const QString &key);
+    void disableFullScreen(const QString &key);
 
     ReminderEngine *m_engine;
-    ActivityMonitor *m_activity;
+    AlertCenter *m_alerts;
     Notifier *m_notifier;
-    QStringList m_queue;
-    QPointer<FullScreenAlarm> m_alarm;
-    QHash<uint, QString> m_notifications; // notification id -> reminder id
 };

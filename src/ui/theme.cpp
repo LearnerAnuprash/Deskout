@@ -107,15 +107,27 @@ QLabel#CardTitle { font-weight: 600; }
 QPushButton#ReadingModeButton { background: %8; border: 1px solid %2; border-radius: 4px; padding: 5px; }
 QPushButton#ReadingModeButton:hover { border-color: %5; }
 QPushButton#ReadingModeButton:checked { background: %5; border-color: %5; color: %6; }
-QToolButton#DayToggle { background: %8; border: 1px solid %2; border-radius: 6px; padding: 4px 8px; }
+QToolButton#DayToggle, QToolButton#PresetButton, QToolButton#TimerToggle {
+    background: %8; border: 1px solid %2; border-radius: 6px; padding: 4px 8px;
+}
+QToolButton#PresetButton:hover, QToolButton#TimerToggle:hover { border-color: %5; }
+QToolButton#PresetButton:disabled { color: %7; }
 QToolButton#DayToggle:checked { background: %5; border-color: %5; color: %6; }
+QToolButton#TimerToggle:checked { border: 2px solid %5; color: %5; font-weight: 600; padding: 3px 7px; }
+QPushButton#PrimaryButton {
+    background: %5; border: 1px solid %5; border-radius: 4px; color: %6; font-weight: 600;
+    padding: 5px 16px;
+}
+QPushButton#PrimaryButton:hover { background: %11; border-color: %11; }
+QPushButton#PrimaryButton:disabled { background: %2; border-color: %2; color: %7; }
+QLabel#SessionCompleted { color: %5; font-weight: 600; }
 QFrame#PauseBanner { background: %9; border-radius: 8px; }
 QFrame#PauseBanner QLabel { color: %10; font-weight: 600; }
 )")
         .arg(c.alternateBase.name(), c.border.name(), c.text.name(), c.button.name(),
              c.accent.name(), c.accentText.name(), c.mutedText.name(), c.base.name(),
              c.bannerBackground.name())
-        .arg(c.bannerText.name());
+        .arg(c.bannerText.name(), c.accent.lighter(112).name());
 }
 
 } // namespace

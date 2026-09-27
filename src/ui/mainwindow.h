@@ -3,6 +3,8 @@
 #include <QMap>
 #include <QMainWindow>
 
+class FocusLog;
+class FocusTimer;
 class PauseManager;
 class QFrame;
 class QLabel;
@@ -29,7 +31,8 @@ public:
         ReadingMode,
     };
 
-    MainWindow(PauseManager *pause, ReminderEngine *reminders, QWidget *parent = nullptr);
+    MainWindow(PauseManager *pause, ReminderEngine *reminders, FocusTimer *focus, FocusLog *focusLog,
+               QWidget *parent = nullptr);
 
     // When true (tray available), closing the window hides it instead of
     // quitting.
@@ -42,6 +45,7 @@ Q_SIGNALS:
     void settingsRequested();
     void reminderSettingsRequested();
     void readingModeToggled(bool on);
+    void focusWindowRequested();
     void hiddenToTray();
 
 protected:

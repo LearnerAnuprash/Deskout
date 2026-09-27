@@ -1,10 +1,14 @@
 #include "app/deskoutapp.h"
 
+#include "app/alertcenter.h"
+#include "app/focusalerts.h"
 #include "app/reminderalerts.h"
 #include "core/commands.h"
+#include "core/database.h"
 #include "core/settingskeys.h"
 #include "core/singleinstance.h"
 #include "platform/autostart.h"
+#include "ui/focustimerwindow.h"
 #include "ui/mainwindow.h"
 #include "ui/theme.h"
 #include "ui/traycontroller.h"
@@ -34,6 +38,7 @@ DeskoutApp::DeskoutApp(SingleInstance *instance, QObject *parent)
     connect(&m_pause, &PauseManager::pausedChanged, this, &DeskoutApp::refreshStatus);
     connect(&m_trayRetry, &QTimer::timeout, this, &DeskoutApp::waitForTray);
     connect(&m_readingMode, &ReadingMode::changed, this, &DeskoutApp::syncReadingModeUi);
+    connect(&m_focus, &FocusTimer::sessionEnded, &m_focusLog, &FocusLog::record);
 }
 
 DeskoutApp::~DeskoutApp()
@@ -41,6 +46,7 @@ DeskoutApp::~DeskoutApp()
     // The dialog may be parentless (opened from the tray), so it is not
     // cleaned up with the main window.
     delete m_settings;
+    Database::close();
 }
 
 void DeskoutApp::start(bool minimized)
@@ -48,14 +54,21 @@ void DeskoutApp::start(bool minimized)
     Theme::applySaved();
     AutoStart::refreshIfEnabled();
 
-    m_reminders.start();
-    m_alerts = std::make_unique<ReminderAlertController>(&m_reminders, &m_activity, &m_notifier, &m_pause);
+    QString dbError;
+    if (!Database::open(Database::defaultPath(), &dbError))
+        qWarning("Deskout: database unavailable, focus history won't be saved: %s", qPrintable(dbError));
 
-    m_window = std::make_unique<MainWindow>(&m_pause, &m_reminders);
+    m_reminders.start();
+    m_alertCenter = std::make_unique<AlertCenter>(&m_activity, &m_notifier, &m_pause);
+    m_reminderAlerts = std::make_unique<ReminderAlertController>(&m_reminders, m_alertCenter.get(), &m_notifier);
+    m_focusAlerts = std::make_unique<FocusAlertController>(&m_focus, m_alertCenter.get(), &m_notifier);
+
+    m_window = std::make_unique<MainWindow>(&m_pause, &m_reminders, &m_focus, &m_focusLog);
     connect(m_window.get(), &MainWindow::settingsRequested, this, [this] { showSettings(); });
     connect(m_window.get(), &MainWindow::reminderSettingsRequested, this,
             [this] { showSettings(SettingsDialog::Tab::Reminders); });
     connect(m_window.get(), &MainWindow::readingModeToggled, this, &DeskoutApp::setReadingMode);
+    connect(m_window.get(), &MainWindow::focusWindowRequested, this, &DeskoutApp::showFocusWindow);
     connect(m_window.get(), &MainWindow::hiddenToTray, this, [this] {
         QSettings settings;
         if (!settings.value(SettingsKeys::UiTrayHintShown, false).toBool()) {
@@ -99,6 +112,8 @@ void DeskoutApp::handleCommand(const QString &command)
         m_pause.resume();
     else if (command == QLatin1String(Commands::ToggleReadingMode))
         setReadingMode(!m_readingMode.isEnabled());
+    else if (command == QLatin1String(Commands::ToggleFocus))
+        toggleFocus();
     else if (command == QLatin1String(Commands::Quit))
         quit();
     else
@@ -139,6 +154,10 @@ void DeskoutApp::quit()
 {
     if (m_window && m_window->isVisible())
         QSettings().setValue(SettingsKeys::UiWindowGeometry, m_window->saveGeometry());
+    if (m_focusWindow)
+        m_focusWindow->saveState();
+    // Logged as stopped early, like pressing Stop.
+    m_focus.stop();
     m_hotkey.clear();
     m_readingMode.shutdown();
     QApplication::quit();
@@ -188,11 +207,12 @@ void DeskoutApp::waitForTray()
 
 void DeskoutApp::enableTray()
 {
-    m_tray = std::make_unique<TrayController>(&m_pause);
+    m_tray = std::make_unique<TrayController>(&m_pause, &m_focus);
     connect(m_tray.get(), &TrayController::openRequested, this, &DeskoutApp::showMainWindow);
     connect(m_tray.get(), &TrayController::settingsRequested, this, [this] { showSettings(); });
     connect(m_tray.get(), &TrayController::quitRequested, this, &DeskoutApp::quit);
     connect(m_tray.get(), &TrayController::readingModeToggled, this, &DeskoutApp::setReadingMode);
+    connect(m_tray.get(), &TrayController::focusWindowRequested, this, &DeskoutApp::showFocusWindow);
     m_tray->setReadingModeChecked(m_readingMode.isEnabled());
     m_tray->show();
     m_notifier.setTray(m_tray.get());
@@ -315,4 +335,21 @@ void DeskoutApp::syncReadingModeUi()
         m_window->setReadingMode(on, tip);
     }
     refreshStatus();
+}
+
+void DeskoutApp::showFocusWindow()
+{
+    if (!m_focusWindow) {
+        m_focusWindow = std::make_unique<FocusTimerWindow>(&m_focus);
+        connect(m_focusWindow.get(), &FocusTimerWindow::openAppRequested, this, &DeskoutApp::showMainWindow);
+    }
+    m_focusWindow->present();
+}
+
+void DeskoutApp::toggleFocus()
+{
+    const bool starting = !m_focus.isActive();
+    m_focus.toggle();
+    if (starting)
+        showFocusWindow();
 }

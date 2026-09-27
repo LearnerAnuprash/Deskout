@@ -1,6 +1,8 @@
 #pragma once
 
 #include "app/readingmode.h"
+#include "core/focuslog.h"
+#include "core/focustimer.h"
 #include "core/pausemanager.h"
 #include "core/reminderengine.h"
 #include "platform/activity/activitymonitor.h"
@@ -14,14 +16,17 @@
 
 #include <memory>
 
+class AlertCenter;
+class FocusAlertController;
+class FocusTimerWindow;
 class MainWindow;
 class ReminderAlertController;
 class SingleInstance;
 class TrayController;
 
-// Owns and wires the app-level components: pause state, reminders, tray,
-// main window, settings, global hotkey and commands from other `deskout`
-// launches.
+// Owns and wires the app-level components: pause state, reminders, focus
+// timer, tray, main window, settings, global hotkey and commands from other
+// `deskout` launches.
 class DeskoutApp : public QObject
 {
     Q_OBJECT
@@ -44,6 +49,8 @@ private:
     void refreshStatus();
     void setReadingMode(bool on);
     void syncReadingModeUi();
+    void showFocusWindow();
+    void toggleFocus();
     QWidget *dialogParent() const;
 
     // Declaration order matters: the engine's hooks read pause and activity.
@@ -53,8 +60,13 @@ private:
     GlobalHotkey m_hotkey;
     Notifier m_notifier;
     ReadingMode m_readingMode;
-    std::unique_ptr<ReminderAlertController> m_alerts;
+    FocusTimer m_focus;
+    FocusLog m_focusLog;
+    std::unique_ptr<AlertCenter> m_alertCenter;
+    std::unique_ptr<ReminderAlertController> m_reminderAlerts;
+    std::unique_ptr<FocusAlertController> m_focusAlerts;
     std::unique_ptr<MainWindow> m_window;
+    std::unique_ptr<FocusTimerWindow> m_focusWindow;
     std::unique_ptr<TrayController> m_tray;
     QPointer<SettingsDialog> m_settings;
     QTimer m_trayRetry;

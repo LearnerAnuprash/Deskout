@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QSystemTrayIcon>
 
+class FocusTimer;
 class PauseManager;
 class QAction;
 class QMenu;
@@ -14,7 +15,7 @@ class TrayController : public QObject
     Q_OBJECT
 
 public:
-    explicit TrayController(PauseManager *pause, QObject *parent = nullptr);
+    TrayController(PauseManager *pause, FocusTimer *focus, QObject *parent = nullptr);
     ~TrayController() override;
 
     void show();
@@ -26,16 +27,22 @@ Q_SIGNALS:
     void openRequested();
     void settingsRequested();
     void readingModeToggled(bool on);
+    void focusWindowRequested();
     void quitRequested();
 
 private:
     void refresh();
+    void refreshFocus();
+    void onFocusActionTriggered();
 
     PauseManager *m_pause;
+    FocusTimer *m_focus;
     QSystemTrayIcon m_tray;
     QMenu *m_menu;
     QAction *m_statusAction;
     QAction *m_resumeAction;
     QMenu *m_pauseMenu;
     QAction *m_readingModeAction;
+    QAction *m_focusAction;
+    QAction *m_focusStopAction;
 };

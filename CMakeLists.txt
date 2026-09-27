@@ -14,20 +14,31 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(DESKOUT_BUILD_TESTS "Build Deskout unit tests" ON)
 
-find_package(Qt6 6.4 REQUIRED COMPONENTS Widgets Network Svg)
+find_package(Qt6 6.4 REQUIRED COMPONENTS Widgets Network Sql Svg)
 
 # Everything except main() lives in a static library so the unit tests can
 # link against the same code the app runs.
 add_library(deskout_lib STATIC
+    src/app/alertcenter.cpp
+    src/app/alertcenter.h
     src/app/deskoutapp.cpp
     src/app/deskoutapp.h
+    src/app/focusalerts.cpp
+    src/app/focusalerts.h
     src/app/readingmode.cpp
     src/app/readingmode.h
     src/app/reminderalerts.cpp
     src/app/reminderalerts.h
+    src/core/alert.h
     src/core/commands.h
+    src/core/database.cpp
+    src/core/database.h
     src/core/eyeexercises.cpp
     src/core/eyeexercises.h
+    src/core/focuslog.cpp
+    src/core/focuslog.h
+    src/core/focustimer.cpp
+    src/core/focustimer.h
     src/core/pausemanager.cpp
     src/core/pausemanager.h
     src/core/reminderengine.cpp
@@ -41,8 +52,8 @@ add_library(deskout_lib STATIC
     src/platform/activity/activitymonitor.cpp
     src/platform/activity/activitymonitor.h
     src/platform/autostart.cpp
-    src/platform/grayscale/grayscalebackend.h
     src/platform/autostart.h
+    src/platform/grayscale/grayscalebackend.h
     src/platform/hotkey/globalhotkey.cpp
     src/platform/hotkey/globalhotkey.h
     src/platform/hotkey/hotkeybackend.h
@@ -50,6 +61,10 @@ add_library(deskout_lib STATIC
     src/platform/hotkey/keyformat.h
     src/ui/appicon.cpp
     src/ui/appicon.h
+    src/ui/focuspage.cpp
+    src/ui/focuspage.h
+    src/ui/focustimerwindow.cpp
+    src/ui/focustimerwindow.h
     src/ui/fullscreenalarm.cpp
     src/ui/fullscreenalarm.h
     src/ui/mainwindow.cpp
@@ -64,13 +79,15 @@ add_library(deskout_lib STATIC
     src/ui/settingsdialog.h
     src/ui/theme.cpp
     src/ui/theme.h
+    src/ui/timedisplay.cpp
+    src/ui/timedisplay.h
     src/ui/traycontroller.cpp
     src/ui/traycontroller.h
 )
 
 target_include_directories(deskout_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_definitions(deskout_lib PUBLIC DESKOUT_VERSION="${PROJECT_VERSION}")
-target_link_libraries(deskout_lib PUBLIC Qt6::Widgets Qt6::Network Qt6::Svg)
+target_link_libraries(deskout_lib PUBLIC Qt6::Widgets Qt6::Network Qt6::Sql Qt6::Svg)
 if(MSVC)
     target_compile_options(deskout_lib PRIVATE /W4)
 else()

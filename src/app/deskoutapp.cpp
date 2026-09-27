@@ -10,8 +10,12 @@
 #include "ui/traycontroller.h"
 
 #include <QApplication>
+#include <QElapsedTimer>
+#include <QMessageBox>
+#include <QPushButton>
 #include <QSettings>
 #include <QSystemTrayIcon>
+#include <QThread>
 
 namespace {
 // At login the panel may register its tray host a few seconds after we start.
@@ -29,6 +33,7 @@ DeskoutApp::DeskoutApp(SingleInstance *instance, QObject *parent)
     connect(&m_hotkey, &GlobalHotkey::activated, this, &DeskoutApp::onHotkeyActivated);
     connect(&m_pause, &PauseManager::pausedChanged, this, &DeskoutApp::refreshStatus);
     connect(&m_trayRetry, &QTimer::timeout, this, &DeskoutApp::waitForTray);
+    connect(&m_readingMode, &ReadingMode::changed, this, &DeskoutApp::syncReadingModeUi);
 }
 
 DeskoutApp::~DeskoutApp()
@@ -50,6 +55,7 @@ void DeskoutApp::start(bool minimized)
     connect(m_window.get(), &MainWindow::settingsRequested, this, [this] { showSettings(); });
     connect(m_window.get(), &MainWindow::reminderSettingsRequested, this,
             [this] { showSettings(SettingsDialog::Tab::Reminders); });
+    connect(m_window.get(), &MainWindow::readingModeToggled, this, &DeskoutApp::setReadingMode);
     connect(m_window.get(), &MainWindow::hiddenToTray, this, [this] {
         QSettings settings;
         if (!settings.value(SettingsKeys::UiTrayHintShown, false).toBool()) {
@@ -73,7 +79,8 @@ void DeskoutApp::start(bool minimized)
         minimized = false;
     }
 
-    refreshStatus();
+    m_readingMode.start();
+    syncReadingModeUi();
     if (!minimized)
         showMainWindow();
 }
@@ -90,6 +97,8 @@ void DeskoutApp::handleCommand(const QString &command)
         m_pause.pauseIndefinitely();
     else if (command == QLatin1String(Commands::Resume))
         m_pause.resume();
+    else if (command == QLatin1String(Commands::ToggleReadingMode))
+        setReadingMode(!m_readingMode.isEnabled());
     else if (command == QLatin1String(Commands::Quit))
         quit();
     else
@@ -131,6 +140,7 @@ void DeskoutApp::quit()
     if (m_window && m_window->isVisible())
         QSettings().setValue(SettingsKeys::UiWindowGeometry, m_window->saveGeometry());
     m_hotkey.clear();
+    m_readingMode.shutdown();
     QApplication::quit();
 }
 
@@ -182,6 +192,8 @@ void DeskoutApp::enableTray()
     connect(m_tray.get(), &TrayController::openRequested, this, &DeskoutApp::showMainWindow);
     connect(m_tray.get(), &TrayController::settingsRequested, this, [this] { showSettings(); });
     connect(m_tray.get(), &TrayController::quitRequested, this, &DeskoutApp::quit);
+    connect(m_tray.get(), &TrayController::readingModeToggled, this, &DeskoutApp::setReadingMode);
+    m_tray->setReadingModeChecked(m_readingMode.isEnabled());
     m_tray->show();
     m_notifier.setTray(m_tray.get());
     m_window->setHideOnClose(true);
@@ -226,4 +238,81 @@ void DeskoutApp::refreshStatus()
     m_window->setStatus(Row::FullscreenDetection,
                         m_activity.fullscreenDetectionEnabled() ? m_activity.fullscreenBackendName()
                                                                 : tr("Off"));
+
+    QString reading;
+    if (m_readingMode.isActive())
+        reading = tr("On");
+    else if (m_readingMode.isPending())
+        reading = tr("Waiting — log out and back in once to finish setup");
+    else
+        reading = tr("Off");
+    m_window->setStatus(Row::ReadingMode, tr("%1 (%2)").arg(reading, m_readingMode.backendName()));
+}
+
+QWidget *DeskoutApp::dialogParent() const
+{
+    return m_window && m_window->isVisible() ? m_window.get() : nullptr;
+}
+
+void DeskoutApp::setReadingMode(bool on)
+{
+    if (!on) {
+        m_readingMode.setEnabled(false);
+        return;
+    }
+
+    const GrayscaleBackend::Status status = m_readingMode.status();
+    if (status.availability == ReadingMode::Availability::NeedsInstall) {
+        QMessageBox box(QMessageBox::Question, tr("Set up Reading mode"),
+                        status.message + QStringLiteral("\n\n")
+                            + tr("On GNOME with Wayland, you'll need to log out and back in once "
+                                 "after installing."),
+                        QMessageBox::Cancel, dialogParent());
+        QPushButton *install = box.addButton(tr("Install"), QMessageBox::AcceptRole);
+        box.setDefaultButton(install);
+        box.exec();
+        if (box.clickedButton() != install) {
+            syncReadingModeUi();
+            return;
+        }
+        QString error;
+        if (!m_readingMode.install(&error)) {
+            QMessageBox::warning(dialogParent(), tr("Reading mode"), error);
+            syncReadingModeUi();
+            return;
+        }
+        // GNOME activates the extension right away when it already knows it
+        // (X11 session, reinstall); give it a moment before falling back to
+        // "log out and back in".
+        QElapsedTimer waited;
+        waited.start();
+        while (waited.elapsed() < 1500
+               && m_readingMode.status().availability != ReadingMode::Availability::Ready) {
+            QCoreApplication::processEvents();
+            QThread::msleep(150);
+        }
+    }
+
+    QString message;
+    if (!m_readingMode.setEnabled(true, &message)) {
+        if (m_readingMode.isPending())
+            QMessageBox::information(dialogParent(), tr("Almost there"), message);
+        else
+            QMessageBox::warning(dialogParent(), tr("Reading mode"), message);
+    }
+    syncReadingModeUi();
+}
+
+void DeskoutApp::syncReadingModeUi()
+{
+    const bool on = m_readingMode.isEnabled();
+    if (m_tray)
+        m_tray->setReadingModeChecked(on);
+    if (m_window) {
+        const QString tip = m_readingMode.isPending()
+                                ? tr("Reading mode is waiting: log out and back in once to finish setup.")
+                                : tr("Turn the whole screen grayscale for distraction-free reading.");
+        m_window->setReadingMode(on, tip);
+    }
+    refreshStatus();
 }

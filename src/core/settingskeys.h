@@ -19,6 +19,8 @@ inline constexpr char IdleThresholdMinutes[] = "detection/idleThresholdMinutes";
 inline constexpr int IdleThresholdDefault = 5;
 inline constexpr char FullscreenDetectionEnabled[] = "detection/fullscreenEnabled";
 
+inline constexpr char ReadingModeEnabled[] = "readingMode/enabled";
+
 inline constexpr char UiTheme[] = "ui/theme";
 inline constexpr char UiTrayHintShown[] = "ui/trayHintShown";
 inline constexpr char UiWindowGeometry[] = "ui/windowGeometry";

@@ -20,10 +20,12 @@ public:
     void show();
     bool isVisible() const;
     void notify(const QString &title, const QString &message);
+    void setReadingModeChecked(bool checked);
 
 Q_SIGNALS:
     void openRequested();
     void settingsRequested();
+    void readingModeToggled(bool on);
     void quitRequested();
 
 private:
@@ -35,4 +37,5 @@ private:
     QAction *m_statusAction;
     QAction *m_resumeAction;
     QMenu *m_pauseMenu;
+    QAction *m_readingModeAction;
 };

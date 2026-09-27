@@ -1,0 +1,6 @@
+{
+  "uuid": "deskout-reading-mode@deskout.app",
+  "name": "Deskout Reading Mode",
+  "description": "Lets the Deskout app turn the whole screen grayscale for distraction-free reading. Installed and controlled by Deskout.",
+  "shell-version": ["45", "46", "47", "48", "49", "50"]
+}

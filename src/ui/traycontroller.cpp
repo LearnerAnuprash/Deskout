@@ -25,6 +25,11 @@ TrayController::TrayController(PauseManager *pause, QObject *parent)
     m_resumeAction = m_menu->addAction(tr("Resume reminders"), m_pause, &PauseManager::resume);
 
     m_menu->addSeparator();
+    m_readingModeAction = m_menu->addAction(tr("Reading mode (grayscale)"));
+    m_readingModeAction->setCheckable(true);
+    connect(m_readingModeAction, &QAction::triggered, this, &TrayController::readingModeToggled);
+
+    m_menu->addSeparator();
     m_menu->addAction(tr("Settings…"), this, &TrayController::settingsRequested);
     m_menu->addSeparator();
     m_menu->addAction(tr("Quit Deskout"), this, &TrayController::quitRequested);
@@ -61,6 +66,12 @@ void TrayController::notify(const QString &title, const QString &message)
 {
     if (m_tray.isVisible() && QSystemTrayIcon::supportsMessages())
         m_tray.showMessage(title, message, AppIcon::icon(m_pause->isPaused()), 5000);
+}
+
+void TrayController::setReadingModeChecked(bool checked)
+{
+    const QSignalBlocker blocker(m_readingModeAction);
+    m_readingModeAction->setChecked(checked);
 }
 
 void TrayController::refresh()

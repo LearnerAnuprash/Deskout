@@ -113,10 +113,11 @@ QWidget *MainWindow::buildSidebar()
                      tr("Daily Updates"), tr("Stats")});
     layout->addWidget(m_nav, 1);
 
-    auto *readingMode = new QPushButton(tr("Reading mode"));
-    readingMode->setEnabled(false);
-    readingMode->setToolTip(tr("Arrives in Phase 2"));
-    layout->addWidget(readingMode);
+    m_readingModeButton = new QPushButton(tr("Reading mode"));
+    m_readingModeButton->setObjectName(QStringLiteral("ReadingModeButton"));
+    m_readingModeButton->setCheckable(true);
+    connect(m_readingModeButton, &QPushButton::clicked, this, &MainWindow::readingModeToggled);
+    layout->addWidget(m_readingModeButton);
 
     auto *settings = new QPushButton(tr("Settings"));
     connect(settings, &QPushButton::clicked, this, &MainWindow::settingsRequested);
@@ -168,6 +169,7 @@ QWidget *MainWindow::buildHomePage()
         {StatusRow::Notifications, tr("Notifications")},
         {StatusRow::IdleDetection, tr("Away detection")},
         {StatusRow::FullscreenDetection, tr("Meeting detection")},
+        {StatusRow::ReadingMode, tr("Reading mode")},
     };
     for (const auto &[row, title] : rows) {
         QLabel *value = makeLabel(QString());
@@ -199,6 +201,13 @@ void MainWindow::refreshPauseState()
     m_pauseBanner->setVisible(m_pause->isPaused());
     m_pauseBannerText->setText(tr("All reminders are muted. %1.").arg(status));
     m_reminderStatus->setText(status);
+}
+
+void MainWindow::setReadingMode(bool checked, const QString &toolTip)
+{
+    const QSignalBlocker blocker(m_readingModeButton);
+    m_readingModeButton->setChecked(checked);
+    m_readingModeButton->setToolTip(toolTip);
 }
 
 void MainWindow::setStatus(StatusRow row, const QString &text)

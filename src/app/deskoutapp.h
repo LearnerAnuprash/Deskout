@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app/readingmode.h"
+#include "core/dailyupdates.h"
 #include "core/docsstore.h"
 #include "core/focuslog.h"
 #include "core/focustimer.h"
@@ -22,12 +23,13 @@ class AlertCenter;
 class FocusAlertController;
 class FocusTimerWindow;
 class MainWindow;
+class RecapDialog;
 class ReminderAlertController;
 class SingleInstance;
 class TrayController;
 
 // Owns and wires the app-level components: pause state, reminders, focus
-// timer, notes, docs, tray, main window, settings, global hotkey and commands
+// timer, notes, docs, daily updates, tray, main window, settings, global hotkey and commands
 // from other `deskout` launches.
 class DeskoutApp : public QObject
 {
@@ -53,6 +55,9 @@ private:
     void syncReadingModeUi();
     void showFocusWindow();
     void toggleFocus();
+    // Shows yesterday's update if it hasn't been shown today and the user
+    // is here and not busy. True if the recap is (now) on screen.
+    bool maybeShowRecap();
     QWidget *dialogParent() const;
 
     // Declaration order matters: the engine's hooks read pause and activity.
@@ -66,6 +71,7 @@ private:
     FocusLog m_focusLog;
     NotesStore m_notes;
     DocsStore m_docs;
+    DailyUpdatesStore m_updates;
     std::unique_ptr<AlertCenter> m_alertCenter;
     std::unique_ptr<ReminderAlertController> m_reminderAlerts;
     std::unique_ptr<FocusAlertController> m_focusAlerts;
@@ -73,6 +79,10 @@ private:
     std::unique_ptr<FocusTimerWindow> m_focusWindow;
     std::unique_ptr<TrayController> m_tray;
     QPointer<SettingsDialog> m_settings;
+    QPointer<RecapDialog> m_recap;
+    // Show the main window once the recap is closed (normal launch).
+    bool m_showWindowAfterRecap = false;
+    QTimer m_recapCheck;
     QTimer m_trayRetry;
     int m_trayRetriesLeft = 0;
 };

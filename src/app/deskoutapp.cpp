@@ -10,6 +10,7 @@
 #include "platform/autostart.h"
 #include "ui/focustimerwindow.h"
 #include "ui/mainwindow.h"
+#include "ui/recapdialog.h"
 #include "ui/theme.h"
 #include "ui/traycontroller.h"
 
@@ -25,6 +26,7 @@ namespace {
 // At login the panel may register its tray host a few seconds after we start.
 constexpr int TrayRetryIntervalMs = 1000;
 constexpr int TrayRetryCount = 20;
+constexpr int RecapCheckIntervalMs = 60 * 1000;
 } // namespace
 
 DeskoutApp::DeskoutApp(SingleInstance *instance, QObject *parent)
@@ -46,6 +48,7 @@ DeskoutApp::~DeskoutApp()
     // The dialog may be parentless (opened from the tray), so it is not
     // cleaned up with the main window.
     delete m_settings;
+    delete m_recap;
     Database::close();
 }
 
@@ -65,7 +68,7 @@ void DeskoutApp::start(bool minimized)
     m_focusAlerts = std::make_unique<FocusAlertController>(&m_focus, m_alertCenter.get(), &m_notifier);
 
     m_window = std::make_unique<MainWindow>(
-        MainWindow::Context{&m_pause, &m_reminders, &m_focus, &m_focusLog, &m_notes, &m_docs});
+        MainWindow::Context{&m_pause, &m_reminders, &m_focus, &m_focusLog, &m_notes, &m_docs, &m_updates});
     connect(m_window.get(), &MainWindow::settingsRequested, this, [this] { showSettings(); });
     connect(m_window.get(), &MainWindow::reminderSettingsRequested, this,
             [this] { showSettings(SettingsDialog::Tab::Reminders); });
@@ -96,8 +99,16 @@ void DeskoutApp::start(bool minimized)
 
     m_readingMode.start();
     syncReadingModeUi();
-    if (!minimized)
+
+    // A new day starts with yesterday's update, before the rest of the UI.
+    // Checked again every minute for days that start without a relaunch
+    // (overnight suspend, or the user was away or busy at launch).
+    if (maybeShowRecap())
+        m_showWindowAfterRecap = !minimized;
+    else if (!minimized)
         showMainWindow();
+    connect(&m_recapCheck, &QTimer::timeout, this, &DeskoutApp::maybeShowRecap);
+    m_recapCheck.start(RecapCheckIntervalMs);
 }
 
 void DeskoutApp::handleCommand(const QString &command)
@@ -354,4 +365,36 @@ void DeskoutApp::toggleFocus()
     m_focus.toggle();
     if (starting)
         showFocusWindow();
+}
+
+bool DeskoutApp::maybeShowRecap()
+{
+    if (m_recap)
+        return true;
+    const QDate today = QDate::currentDate();
+    const std::optional<DailyUpdate> update = m_updates.recapDue(today);
+    if (!update)
+        return false;
+    // Not while away (it would be stale by the time they're back), paused,
+    // or presenting / in a call.
+    if (m_pause.isPaused() || m_activity.isIdle() || m_activity.shouldAvoidFullscreen())
+        return false;
+
+    DailyUpdatesStore::markRecapShown(today);
+    m_recap = new RecapDialog(*update, today);
+    m_recap->setAttribute(Qt::WA_DeleteOnClose);
+    connect(m_recap, &RecapDialog::openUpdatesRequested, this, [this] {
+        m_showWindowAfterRecap = false;
+        showMainWindow();
+        m_window->showPage(MainWindow::Page::Updates);
+    });
+    connect(m_recap, &QDialog::finished, this, [this] {
+        if (m_showWindowAfterRecap)
+            showMainWindow();
+        m_showWindowAfterRecap = false;
+    });
+    m_recap->show();
+    m_recap->raise();
+    m_recap->activateWindow();
+    return true;
 }

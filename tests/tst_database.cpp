@@ -46,6 +46,7 @@ private Q_SLOTS:
         QVERIFY(tableExists(QStringLiteral("focus_sessions")));
         QVERIFY(tableExists(QStringLiteral("notes")));
         QVERIFY(tableExists(QStringLiteral("docs")));
+        QVERIFY(tableExists(QStringLiteral("daily_updates")));
     }
 
     void reopeningKeepsSchema()

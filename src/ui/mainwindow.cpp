@@ -7,6 +7,7 @@
 #include "ui/focuspage.h"
 #include "ui/notespage.h"
 #include "ui/reminderspage.h"
+#include "ui/updatespage.h"
 
 #include <QCloseEvent>
 #include <QFormLayout>
@@ -63,8 +64,8 @@ MainWindow::MainWindow(const Context &context, QWidget *parent)
     m_pages->addWidget(focusPage);
     m_pages->addWidget(new NotesPage(context.notes));
     m_pages->addWidget(new DocsPage(context.docs));
-    m_pages->addWidget(buildPlaceholderPage(tr("Daily Updates"),
-        tr("Write what you did today; see it first thing tomorrow."), 6));
+    m_updatesPage = new UpdatesPage(context.updates);
+    m_pages->addWidget(m_updatesPage);
     m_pages->addWidget(buildPlaceholderPage(tr("Stats"),
         tr("Breaks taken, hydration and focus sessions, plus your current streak."), 7));
     contentLayout->addWidget(m_pages, 1);
@@ -210,6 +211,13 @@ void MainWindow::setReadingMode(bool checked, const QString &toolTip)
     const QSignalBlocker blocker(m_readingModeButton);
     m_readingModeButton->setChecked(checked);
     m_readingModeButton->setToolTip(toolTip);
+}
+
+void MainWindow::showPage(Page page)
+{
+    m_nav->setCurrentRow(int(page));
+    if (page == Page::Updates)
+        m_updatesPage->focusToday();
 }
 
 void MainWindow::setStatus(StatusRow row, const QString &text)

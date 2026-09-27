@@ -14,6 +14,8 @@ class QListWidget;
 class QPushButton;
 class QStackedWidget;
 class ReminderEngine;
+class DailyUpdatesStore;
+class UpdatesPage;
 
 // Shell window: sidebar navigation + page stack. Feature pages are
 // placeholders until their phase lands.
@@ -22,6 +24,17 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
+    // Sidebar entries, in order.
+    enum class Page {
+        Home,
+        Reminders,
+        Focus,
+        Notes,
+        Docs,
+        Updates,
+        Stats,
+    };
+
     // Rows of the "Status" card on the Home page.
     enum class StatusRow {
         Hotkey,
@@ -42,6 +55,7 @@ public:
         FocusLog *focusLog;
         NotesStore *notes;
         DocsStore *docs;
+        DailyUpdatesStore *updates;
     };
 
     explicit MainWindow(const Context &context, QWidget *parent = nullptr);
@@ -51,6 +65,9 @@ public:
     void setHideOnClose(bool hide) { m_hideOnClose = hide; }
 
     void setStatus(StatusRow row, const QString &text);
+    // Switches the sidebar to `page`; Updates also puts the cursor in
+    // today's entry.
+    void showPage(Page page);
     void setReadingMode(bool checked, const QString &toolTip);
 
 Q_SIGNALS:
@@ -74,6 +91,7 @@ private:
     ReminderEngine *m_reminders;
     QListWidget *m_nav = nullptr;
     QStackedWidget *m_pages = nullptr;
+    UpdatesPage *m_updatesPage = nullptr;
     QFrame *m_pauseBanner = nullptr;
     QLabel *m_pauseBannerText = nullptr;
     QLabel *m_reminderStatus = nullptr;

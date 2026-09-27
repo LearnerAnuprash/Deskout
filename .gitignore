@@ -1,0 +1,36 @@
+build/
+build-*/
+cmake-build-*/
+.cache/
+compile_commands.json
+CMakeLists.txt.user*
+*.autosave
+.qtcreator/
+.vscode/
+.idea/
+.agents/
+.claude/
+Claude.md
+
+# Secrets and local-only config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+*.p12
+*.pfx
+*.mobileprovision
+*.provisionprofile
+CMakeUserPresets.json
+
+# Local app data (notes/docs DB, exports)
+*.db
+*.sqlite
+*.sqlite3
+deskout-export*.json
+deskout-export*.zip
+
+# Tool logs
+aqtinstall.log

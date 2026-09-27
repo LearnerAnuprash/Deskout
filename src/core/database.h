@@ -10,6 +10,9 @@ namespace Database {
 // <app data dir>/deskout.db
 QString defaultPath();
 
+// The schema version open() upgrades to.
+int schemaVersion();
+
 // Opens (creating if needed) the database at `path` and brings the schema
 // up to date. Safe to call again with another path (tests); the previous
 // connection is closed first.
@@ -21,5 +24,9 @@ bool isOpen();
 QString openError();
 
 QSqlDatabase connection();
+
+// "%text%" for `LIKE ? ESCAPE '\'`, with % and _ in `text` matched
+// literally.
+QString likePattern(const QString &text);
 
 } // namespace Database

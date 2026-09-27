@@ -3,7 +3,9 @@
 #include "core/pausemanager.h"
 #include "core/settingskeys.h"
 #include "ui/appicon.h"
+#include "ui/docspage.h"
 #include "ui/focuspage.h"
+#include "ui/notespage.h"
 #include "ui/reminderspage.h"
 
 #include <QCloseEvent>
@@ -30,11 +32,10 @@ QLabel *makeLabel(const QString &text, const char *objectName = nullptr)
 
 } // namespace
 
-MainWindow::MainWindow(PauseManager *pause, ReminderEngine *reminders, FocusTimer *focus, FocusLog *focusLog,
-                       QWidget *parent)
+MainWindow::MainWindow(const Context &context, QWidget *parent)
     : QMainWindow(parent)
-    , m_pause(pause)
-    , m_reminders(reminders)
+    , m_pause(context.pause)
+    , m_reminders(context.reminders)
 {
     setWindowTitle(QStringLiteral("Deskout"));
     setWindowIcon(AppIcon::icon());
@@ -57,13 +58,11 @@ MainWindow::MainWindow(PauseManager *pause, ReminderEngine *reminders, FocusTime
     auto *remindersPage = new RemindersPage(m_reminders);
     connect(remindersPage, &RemindersPage::editRequested, this, &MainWindow::reminderSettingsRequested);
     m_pages->addWidget(remindersPage);
-    auto *focusPage = new FocusPage(focus, focusLog);
+    auto *focusPage = new FocusPage(context.focus, context.focusLog);
     connect(focusPage, &FocusPage::popOutRequested, this, &MainWindow::focusWindowRequested);
     m_pages->addWidget(focusPage);
-    m_pages->addWidget(buildPlaceholderPage(tr("Notes"),
-        tr("Quick memos you can create, edit and delete."), 4));
-    m_pages->addWidget(buildPlaceholderPage(tr("Topic Docs"),
-        tr("A lightweight document editor for longer write-ups, one doc per topic."), 5));
+    m_pages->addWidget(new NotesPage(context.notes));
+    m_pages->addWidget(new DocsPage(context.docs));
     m_pages->addWidget(buildPlaceholderPage(tr("Daily Updates"),
         tr("Write what you did today; see it first thing tomorrow."), 6));
     m_pages->addWidget(buildPlaceholderPage(tr("Stats"),

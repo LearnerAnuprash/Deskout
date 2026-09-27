@@ -1,8 +1,10 @@
 #pragma once
 
 #include "app/readingmode.h"
+#include "core/docsstore.h"
 #include "core/focuslog.h"
 #include "core/focustimer.h"
+#include "core/notesstore.h"
 #include "core/pausemanager.h"
 #include "core/reminderengine.h"
 #include "platform/activity/activitymonitor.h"
@@ -25,8 +27,8 @@ class SingleInstance;
 class TrayController;
 
 // Owns and wires the app-level components: pause state, reminders, focus
-// timer, tray, main window, settings, global hotkey and commands from other
-// `deskout` launches.
+// timer, notes, docs, tray, main window, settings, global hotkey and commands
+// from other `deskout` launches.
 class DeskoutApp : public QObject
 {
     Q_OBJECT
@@ -62,6 +64,8 @@ private:
     ReadingMode m_readingMode;
     FocusTimer m_focus;
     FocusLog m_focusLog;
+    NotesStore m_notes;
+    DocsStore m_docs;
     std::unique_ptr<AlertCenter> m_alertCenter;
     std::unique_ptr<ReminderAlertController> m_reminderAlerts;
     std::unique_ptr<FocusAlertController> m_focusAlerts;

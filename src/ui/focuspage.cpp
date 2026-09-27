@@ -4,6 +4,7 @@
 #include "core/focustimer.h"
 #include "core/settingskeys.h"
 #include "ui/timedisplay.h"
+#include "ui/timeformat.h"
 
 #include <QCheckBox>
 #include <QCoreApplication>
@@ -12,7 +13,6 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
-#include <QLocale>
 #include <QPushButton>
 #include <QSettings>
 #include <QSpinBox>
@@ -39,18 +39,6 @@ QString formatMinutes(int seconds)
     if (minutes < 60)
         return QCoreApplication::translate("FocusPage", "%1 min").arg(minutes);
     return QCoreApplication::translate("FocusPage", "%1 h %2 min").arg(minutes / 60).arg(minutes % 60);
-}
-
-QString formatWhen(const QDateTime &when)
-{
-    const QLocale locale;
-    const QString time = locale.toString(when.time(), QLocale::ShortFormat);
-    const QDate today = QDate::currentDate();
-    if (when.date() == today)
-        return time;
-    if (when.date() == today.addDays(-1))
-        return QCoreApplication::translate("FocusPage", "Yesterday %1").arg(time);
-    return locale.toString(when.date(), QStringLiteral("ddd d MMM")) + QLatin1Char(' ') + time;
 }
 
 } // namespace
@@ -288,7 +276,7 @@ void FocusPage::refreshHistory()
         rowLayout->setContentsMargins(0, 0, 0, 0);
         rowLayout->setSpacing(16);
 
-        auto *when = new QLabel(formatWhen(session.startedAt));
+        auto *when = new QLabel(TimeFormat::dateTime(session.startedAt));
         when->setObjectName(QStringLiteral("Muted"));
         when->setMinimumWidth(120);
         rowLayout->addWidget(when);

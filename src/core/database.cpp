@@ -37,6 +37,29 @@ const QStringList Migrations[] = {
                        " topic TEXT NOT NULL DEFAULT '')"),
         QStringLiteral("CREATE INDEX focus_sessions_day ON focus_sessions(day)"),
     },
+    // 2: notes
+    {
+        QStringLiteral("CREATE TABLE notes ("
+                       " id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                       " title TEXT NOT NULL DEFAULT '',"
+                       " body TEXT NOT NULL DEFAULT '',"
+                       " created_at INTEGER NOT NULL," // ms since epoch, UTC
+                       " updated_at INTEGER NOT NULL)"),
+        QStringLiteral("CREATE INDEX notes_updated ON notes(updated_at)"),
+    },
+    // 3: topic documents. The id, not the title, identifies a document, so
+    // renaming never touches anything else.
+    {
+        QStringLiteral("CREATE TABLE docs ("
+                       " id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                       " title TEXT NOT NULL,"
+                       " html TEXT NOT NULL DEFAULT '',"       // QTextDocument::toHtml()
+                       " plain_text TEXT NOT NULL DEFAULT ''," // for search and previews
+                       " word_count INTEGER NOT NULL DEFAULT 0,"
+                       " created_at INTEGER NOT NULL,"         // ms since epoch, UTC
+                       " updated_at INTEGER NOT NULL)"),
+        QStringLiteral("CREATE INDEX docs_updated ON docs(updated_at)"),
+    },
 };
 
 bool fail(QString *error, const QString &text)
@@ -79,6 +102,20 @@ bool migrate(QSqlDatabase &db, QString *error)
 } // namespace
 
 namespace Database {
+
+QString likePattern(const QString &text)
+{
+    QString escaped = text;
+    escaped.replace(QLatin1Char('\\'), QLatin1String("\\\\"));
+    escaped.replace(QLatin1Char('%'), QLatin1String("\\%"));
+    escaped.replace(QLatin1Char('_'), QLatin1String("\\_"));
+    return QLatin1Char('%') + escaped + QLatin1Char('%');
+}
+
+int schemaVersion()
+{
+    return int(std::size(Migrations));
+}
 
 QString defaultPath()
 {

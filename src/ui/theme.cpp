@@ -121,6 +121,26 @@ QPushButton#PrimaryButton {
 QPushButton#PrimaryButton:hover { background: %11; border-color: %11; }
 QPushButton#PrimaryButton:disabled { background: %2; border-color: %2; color: %7; }
 QLabel#SessionCompleted { color: %5; font-weight: 600; }
+QListWidget#NotesList { background: transparent; border: none; outline: 0; }
+QSplitter#NotesSplitter::handle { background: %2; }
+QLineEdit#NoteTitle { font-size: 20px; font-weight: 600; border: none; background: transparent; padding: 4px 0; }
+QPlainTextEdit#NoteBody { font-size: 14px; border: none; background: transparent; }
+QPushButton#BackButton { background: transparent; border: none; color: %5; font-weight: 600; padding: 4px 2px; }
+QPushButton#BackButton:hover { text-decoration: underline; }
+QLineEdit#DocTitle {
+    font-size: 18px; font-weight: 600; background: transparent;
+    border: 1px solid transparent; border-radius: 4px; padding: 2px 6px;
+}
+QLineEdit#DocTitle:hover { border-color: %2; }
+QLineEdit#DocTitle:focus { border-color: %5; background: %8; }
+QToolButton#FormatButton { border: 1px solid transparent; border-radius: 4px; padding: 3px 8px; min-width: 16px; }
+QToolButton#FormatButton:hover { background: %1; border-color: %2; }
+QToolButton#FormatButton:checked { background: %1; border-color: %5; color: %5; }
+QToolButton#FormatButton:disabled { color: %7; }
+QFrame#ToolbarRule, QFrame#ToolbarSeparator { background: %2; border: none; }
+QTextEdit#DocPage { background: %8; border: none; font-size: 15px; }
+QTreeWidget#DocsList { background: transparent; border: none; outline: 0; }
+QTreeWidget#DocsList::item { padding: 5px 2px; }
 QFrame#PauseBanner { background: %9; border-radius: 8px; }
 QFrame#PauseBanner QLabel { color: %10; font-weight: 600; }
 )")

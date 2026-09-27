@@ -31,6 +31,9 @@ inline constexpr char FocusMiniMode[] = "focus/miniMode";
 inline constexpr char FocusWindowGeometry[] = "focus/windowGeometry";
 inline constexpr char FocusMiniGeometry[] = "focus/miniGeometry";
 
+// Share of breaks (percent) a day needs for the streak.
+inline constexpr char StatsStreakThreshold[] = "stats/streakThreshold";
+
 // Morning recap of the last daily update.
 inline constexpr char UpdatesRecapEnabled[] = "updates/recapEnabled";
 inline constexpr char UpdatesRecapShownOn[] = "updates/recapShownOn";

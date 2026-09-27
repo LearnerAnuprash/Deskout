@@ -47,6 +47,7 @@ private Q_SLOTS:
         QVERIFY(tableExists(QStringLiteral("notes")));
         QVERIFY(tableExists(QStringLiteral("docs")));
         QVERIFY(tableExists(QStringLiteral("daily_updates")));
+        QVERIFY(tableExists(QStringLiteral("daily_stats")));
     }
 
     void reopeningKeepsSchema()
@@ -86,6 +87,42 @@ private Q_SLOTS:
         QSqlQuery query(Database::connection());
         QVERIFY(query.exec(QStringLiteral("SELECT topic FROM focus_sessions")) && query.next());
         QCOMPARE(query.value(0).toString(), QStringLiteral("kept"));
+    }
+
+    // Focus history recorded before the stats table existed is carried
+    // into the daily totals.
+    void statsSeededFromFocusHistory()
+    {
+        {
+            QSqlDatabase db = QSqlDatabase::addDatabase(QStringLiteral("QSQLITE"), QStringLiteral("v4"));
+            db.setDatabaseName(path());
+            QVERIFY(db.open());
+            QSqlQuery query(db);
+            QVERIFY(query.exec(QStringLiteral(
+                "CREATE TABLE focus_sessions (id INTEGER PRIMARY KEY AUTOINCREMENT, started_at INTEGER NOT NULL,"
+                " day TEXT NOT NULL, planned_seconds INTEGER NOT NULL, focused_seconds INTEGER NOT NULL,"
+                " completed INTEGER NOT NULL, topic TEXT NOT NULL DEFAULT '')")));
+            QVERIFY(query.exec(QStringLiteral(
+                "INSERT INTO focus_sessions (started_at, day, planned_seconds, focused_seconds, completed) VALUES"
+                " (0, '2026-09-27', 1500, 1500, 1), (0, '2026-09-27', 1500, 600, 0),"
+                " (0, '2026-09-26', 1500, 300, 0)")));
+            QVERIFY(query.exec(QStringLiteral("PRAGMA user_version = 1")));
+            db.close();
+        }
+        QSqlDatabase::removeDatabase(QStringLiteral("v4"));
+
+        QVERIFY(Database::open(path()));
+        const auto value = [](const char *day, const char *metric) {
+            QSqlQuery query(Database::connection());
+            query.prepare(QStringLiteral("SELECT value FROM daily_stats WHERE day = ? AND metric = ?"));
+            query.addBindValue(QLatin1String(day));
+            query.addBindValue(QLatin1String(metric));
+            return query.exec() && query.next() ? query.value(0).toInt() : -1;
+        };
+        QCOMPARE(value("2026-09-27", "focus.completed"), 1);
+        QCOMPARE(value("2026-09-27", "focus.seconds"), 2100);
+        QCOMPARE(value("2026-09-26", "focus.completed"), -1); // none completed: no row
+        QCOMPARE(value("2026-09-26", "focus.seconds"), 300);
     }
 
     void refusesNewerSchema()

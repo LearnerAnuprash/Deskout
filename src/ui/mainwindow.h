@@ -4,6 +4,7 @@
 #include <QMainWindow>
 
 class DocsStore;
+class StatsStore;
 class FocusLog;
 class FocusTimer;
 class NotesStore;
@@ -17,8 +18,7 @@ class ReminderEngine;
 class DailyUpdatesStore;
 class UpdatesPage;
 
-// Shell window: sidebar navigation + page stack. Feature pages are
-// placeholders until their phase lands.
+// Shell window: sidebar navigation + page stack.
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -56,6 +56,7 @@ public:
         NotesStore *notes;
         DocsStore *docs;
         DailyUpdatesStore *updates;
+        StatsStore *stats;
     };
 
     explicit MainWindow(const Context &context, QWidget *parent = nullptr);
@@ -83,7 +84,6 @@ protected:
 private:
     QWidget *buildSidebar();
     QWidget *buildHomePage();
-    QWidget *buildPlaceholderPage(const QString &title, const QString &description, int phase);
     QFrame *buildPauseBanner();
     void refreshPauseState();
 

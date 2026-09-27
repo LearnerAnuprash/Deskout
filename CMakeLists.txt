@@ -29,6 +29,8 @@ add_library(deskout_lib STATIC
     src/app/readingmode.h
     src/app/reminderalerts.cpp
     src/app/reminderalerts.h
+    src/app/statsrecorder.cpp
+    src/app/statsrecorder.h
     src/core/alert.h
     src/core/commands.h
     src/core/dailyupdates.cpp
@@ -52,6 +54,8 @@ add_library(deskout_lib STATIC
     src/core/reminders.cpp
     src/core/reminders.h
     src/core/settingskeys.h
+    src/core/stats.cpp
+    src/core/stats.h
     src/core/singleinstance.cpp
     src/core/singleinstance.h
     src/platform/activity/activitybackend.h
@@ -93,6 +97,10 @@ add_library(deskout_lib STATIC
     src/ui/remindersettingspage.h
     src/ui/settingsdialog.cpp
     src/ui/settingsdialog.h
+    src/ui/statspage.cpp
+    src/ui/statspage.h
+    src/ui/statswidgets.cpp
+    src/ui/statswidgets.h
     src/ui/theme.cpp
     src/ui/theme.h
     src/ui/timedisplay.cpp

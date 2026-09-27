@@ -24,6 +24,9 @@ deskout_add_test(tst_richtextedit)
 deskout_add_test(tst_docspage)
 deskout_add_test(tst_dailyupdates)
 deskout_add_test(tst_updatespage)
+deskout_add_test(tst_stats)
+deskout_add_test(tst_statsrecorder)
+deskout_add_test(tst_statspage)
 deskout_add_test(tst_alertcenter)
 # Alarms open windows and send notifications: keep both off the real desktop.
 set_tests_properties(tst_alertcenter PROPERTIES ENVIRONMENT

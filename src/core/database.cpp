@@ -69,6 +69,20 @@ const QStringList Migrations[] = {
                        " created_at INTEGER NOT NULL," // ms since epoch, UTC
                        " updated_at INTEGER NOT NULL)"),
     },
+    // 5: daily totals for the stats view (see core/stats.h for the metric
+    // names), seeded with the focus history recorded so far.
+    {
+        QStringLiteral("CREATE TABLE daily_stats ("
+                       " day TEXT NOT NULL,"  // yyyy-MM-dd, local date
+                       " metric TEXT NOT NULL,"
+                       " value INTEGER NOT NULL DEFAULT 0,"
+                       " PRIMARY KEY (day, metric))"),
+        QStringLiteral("INSERT INTO daily_stats (day, metric, value)"
+                       " SELECT day, 'focus.completed', SUM(completed) FROM focus_sessions"
+                       " GROUP BY day HAVING SUM(completed) > 0"),
+        QStringLiteral("INSERT INTO daily_stats (day, metric, value)"
+                       " SELECT day, 'focus.seconds', SUM(focused_seconds) FROM focus_sessions GROUP BY day"),
+    },
 };
 
 bool fail(QString *error, const QString &text)

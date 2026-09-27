@@ -4,6 +4,10 @@ A desktop wellness and focus app for Windows, macOS and Linux, built with C++17 
 
 Deskout lives in the system tray. It reminds you to rest your eyes, drink water and stretch, and gives you a quiet place for focus sessions, notes, documents and daily updates.
 
+## Download
+
+Get the latest version for Windows, macOS or Linux from the [Releases page](https://github.com/LearnerAnuprash/Deskout/releases/latest).
+
 ## Reminders
 
 Eye break, drink water, and walk and stretch reminders. Each one has its own interval, active days and active hours, and can show as a full-screen alarm or a simple notification. Eye breaks come with short guided eye exercises.

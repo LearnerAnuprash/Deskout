@@ -1,0 +1,126 @@
+# Builds and tests Deskout on Linux, Windows and macOS for every pull request
+# and push to develop. Pushing a version tag (for example v1.0.0) also
+# publishes the installers as a GitHub release.
+name: Build
+
+on:
+  push:
+    branches: [develop]
+    tags: ['v*']
+  pull_request:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The oldest supported Ubuntu, so the packages run on it and newer.
+          - name: Linux
+            os: ubuntu-22.04
+            qt: 6.11.3
+          # aqtinstall can't install Qt 6.11 for Windows yet.
+          - name: Windows
+            os: windows-latest
+            qt: 6.10.2
+            qt-arch: win64_msvc2022_64
+          # One universal app for Apple Silicon and Intel Macs.
+          - name: macOS
+            os: macos-latest
+            qt: 6.11.3
+            cmake-args: '"-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install system libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libx11-dev libxkbcommon-dev libxkbcommon-x11-0 \
+            libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 \
+            libxcb-render-util0 libxcb-shape0 libxcb-xkb1
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ matrix.qt }}
+          arch: ${{ matrix.qt-arch }}
+          cache: true
+
+      - name: Build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake-args }}
+          cmake --build build --config Release --parallel
+
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Package for Linux
+        if: runner.os == 'Linux'
+        run: packaging/linux/package.sh build dist
+
+      - name: Package for Windows and macOS
+        if: runner.os != 'Linux'
+        run: |
+          # Chocolatey ships its own cpack on the Windows runners; use CMake's.
+          cpack=$(dirname "$(command -v cmake)")/cpack
+          export PATH="/c/Program Files (x86)/Inno Setup 6:$PATH"
+          # hdiutil on the macOS runners sometimes fails with "Resource busy".
+          for attempt in 1 2 3; do
+            (cd build && "$cpack" -C Release) && break
+            [ "$attempt" = 3 ] && exit 1
+            sleep 10
+          done
+          mkdir -p dist
+          find build -maxdepth 1 -type f -name 'Deskout-*' -exec mv {} dist/ \;
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Deskout-${{ matrix.name }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Check the tag matches the app version
+        run: |
+          version=$(sed -n 's/^    VERSION \([0-9.]*\)$/\1/p' CMakeLists.txt)
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match version $version in CMakeLists.txt"
+            exit 1
+          fi
+
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=${GITHUB_REF_NAME#v}
+          (cd dist && sha256sum * > SHA256SUMS.txt)
+          sed "s/{version}/$version/g" .github/release-notes.md > notes.md
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "Deskout $version" \
+            --notes-file notes.md \
+            --generate-notes

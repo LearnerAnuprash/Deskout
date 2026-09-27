@@ -1,7 +1,11 @@
 #pragma once
 
 #include "core/pausemanager.h"
+#include "core/reminderengine.h"
+#include "platform/activity/activitymonitor.h"
 #include "platform/hotkey/globalhotkey.h"
+#include "ui/notifier.h"
+#include "ui/settingsdialog.h"
 
 #include <QObject>
 #include <QPointer>
@@ -10,12 +14,13 @@
 #include <memory>
 
 class MainWindow;
-class SettingsDialog;
+class ReminderAlertController;
 class SingleInstance;
 class TrayController;
 
-// Owns and wires the app-level components: pause state, tray, main window,
-// settings, global hotkey and commands from other `deskout` launches.
+// Owns and wires the app-level components: pause state, reminders, tray,
+// main window, settings, global hotkey and commands from other `deskout`
+// launches.
 class DeskoutApp : public QObject
 {
     Q_OBJECT
@@ -29,7 +34,7 @@ public:
 
 private:
     void showMainWindow();
-    void showSettings();
+    void showSettings(SettingsDialog::Tab tab = SettingsDialog::Tab::General);
     void quit();
     void applyHotkey();
     void onHotkeyActivated();
@@ -37,8 +42,13 @@ private:
     void enableTray();
     void refreshStatus();
 
+    // Declaration order matters: the engine's hooks read pause and activity.
     PauseManager m_pause;
+    ActivityMonitor m_activity;
+    ReminderEngine m_reminders;
     GlobalHotkey m_hotkey;
+    Notifier m_notifier;
+    std::unique_ptr<ReminderAlertController> m_alerts;
     std::unique_ptr<MainWindow> m_window;
     std::unique_ptr<TrayController> m_tray;
     QPointer<SettingsDialog> m_settings;

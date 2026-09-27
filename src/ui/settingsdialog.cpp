@@ -1,9 +1,11 @@
 #include "ui/settingsdialog.h"
 
 #include "core/settingskeys.h"
+#include "platform/activity/activitymonitor.h"
 #include "platform/autostart.h"
 #include "platform/hotkey/globalhotkey.h"
 #include "platform/hotkey/keyformat.h"
+#include "ui/remindersettingspage.h"
 #include "ui/theme.h"
 
 #include <QCheckBox>
@@ -17,18 +19,22 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSettings>
+#include <QSpinBox>
 #include <QTabWidget>
 #include <QVBoxLayout>
 
-SettingsDialog::SettingsDialog(const GlobalHotkey *hotkey, QWidget *parent)
+SettingsDialog::SettingsDialog(const Context &context, QWidget *parent)
     : QDialog(parent)
-    , m_hotkey(hotkey)
+    , m_context(context)
 {
     setWindowTitle(tr("Deskout Settings"));
-    setMinimumWidth(520);
+    setMinimumSize(560, 560);
 
-    auto *tabs = new QTabWidget;
-    tabs->addTab(buildGeneralTab(), tr("General"));
+    m_tabs = new QTabWidget;
+    m_tabs->addTab(buildGeneralTab(), tr("General"));
+    m_reminderPage = new ReminderSettingsPage(m_context.reminders);
+    m_tabs->addTab(m_reminderPage, tr("Reminders"));
+    m_tabs->addTab(buildDetectionTab(), tr("Detection"));
 
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel
                                          | QDialogButtonBox::Apply);
@@ -41,10 +47,15 @@ SettingsDialog::SettingsDialog(const GlobalHotkey *hotkey, QWidget *parent)
             &SettingsDialog::apply);
 
     auto *layout = new QVBoxLayout(this);
-    layout->addWidget(tabs);
+    layout->addWidget(m_tabs);
     layout->addWidget(buttons);
 
     load();
+}
+
+void SettingsDialog::showTab(Tab tab)
+{
+    m_tabs->setCurrentIndex(int(tab));
 }
 
 QWidget *SettingsDialog::buildGeneralTab()
@@ -104,6 +115,49 @@ QWidget *SettingsDialog::buildGeneralTab()
     return page;
 }
 
+QWidget *SettingsDialog::buildDetectionTab()
+{
+    auto *page = new QWidget;
+    auto *layout = new QVBoxLayout(page);
+
+    auto *idle = new QGroupBox(tr("When I'm away"));
+    auto *idleLayout = new QVBoxLayout(idle);
+    m_idleEnabled = new QCheckBox(tr("Stop reminder timers while I'm away from the computer"));
+    idleLayout->addWidget(m_idleEnabled);
+    auto *thresholdRow = new QHBoxLayout;
+    thresholdRow->addWidget(new QLabel(tr("Count me as away after")));
+    m_idleMinutes = new QSpinBox;
+    m_idleMinutes->setRange(1, 120);
+    m_idleMinutes->setSuffix(tr(" min without keyboard or mouse input"));
+    thresholdRow->addWidget(m_idleMinutes);
+    thresholdRow->addStretch(1);
+    idleLayout->addLayout(thresholdRow);
+    m_idleStatus = new QLabel;
+    m_idleStatus->setObjectName(QStringLiteral("Muted"));
+    m_idleStatus->setWordWrap(true);
+    idleLayout->addWidget(m_idleStatus);
+    layout->addWidget(idle);
+    connect(m_idleEnabled, &QCheckBox::toggled, m_idleMinutes, &QWidget::setEnabled);
+
+    auto *fullscreen = new QGroupBox(tr("Meetings and presentations"));
+    auto *fullscreenLayout = new QVBoxLayout(fullscreen);
+    m_fullscreenEnabled = new QCheckBox(tr("Avoid full-screen alarms during calls and presentations"));
+    fullscreenLayout->addWidget(m_fullscreenEnabled);
+    auto *fullscreenHint = new QLabel(
+        tr("While another app is full-screen, or something keeps the screen awake (a call, "
+           "a video, a presentation), reminders arrive as notifications instead."));
+    fullscreenHint->setWordWrap(true);
+    fullscreenLayout->addWidget(fullscreenHint);
+    m_fullscreenStatus = new QLabel;
+    m_fullscreenStatus->setObjectName(QStringLiteral("Muted"));
+    m_fullscreenStatus->setWordWrap(true);
+    fullscreenLayout->addWidget(m_fullscreenStatus);
+    layout->addWidget(fullscreen);
+
+    layout->addStretch(1);
+    return page;
+}
+
 void SettingsDialog::load()
 {
     QSettings settings;
@@ -119,6 +173,14 @@ void SettingsDialog::load()
 
     m_theme->setCurrentIndex(m_theme->findData(int(Theme::savedMode())));
     refreshHotkeyStatus();
+
+    m_reminderPage->load();
+    m_idleEnabled->setChecked(settings.value(SettingsKeys::IdleDetectionEnabled, true).toBool());
+    m_idleMinutes->setEnabled(m_idleEnabled->isChecked());
+    m_idleMinutes->setValue(
+        settings.value(SettingsKeys::IdleThresholdMinutes, SettingsKeys::IdleThresholdDefault).toInt());
+    m_fullscreenEnabled->setChecked(settings.value(SettingsKeys::FullscreenDetectionEnabled, true).toBool());
+    refreshDetectionStatus();
 }
 
 bool SettingsDialog::apply()
@@ -145,9 +207,14 @@ bool SettingsDialog::apply()
     settings.setValue(SettingsKeys::HotkeySequence,
                       m_hotkeyEdit->keySequence().toString(QKeySequence::PortableText));
     Theme::saveMode(Theme::Mode(m_theme->currentData().toInt()));
+    settings.setValue(SettingsKeys::IdleDetectionEnabled, m_idleEnabled->isChecked());
+    settings.setValue(SettingsKeys::IdleThresholdMinutes, m_idleMinutes->value());
+    settings.setValue(SettingsKeys::FullscreenDetectionEnabled, m_fullscreenEnabled->isChecked());
+    m_reminderPage->apply();
 
     Q_EMIT applied();
     refreshHotkeyStatus();
+    refreshDetectionStatus();
     return true;
 }
 
@@ -166,12 +233,24 @@ void SettingsDialog::refreshHotkeyStatus()
 {
     if (!m_hotkeyEnabled->isChecked()) {
         m_hotkeyStatus->setText(tr("Shortcut disabled."));
-    } else if (m_hotkey->isRegistered()) {
+    } else if (m_context.hotkey->isRegistered()) {
         m_hotkeyStatus->setText(tr("Active: %1 via %2.")
-                                    .arg(m_hotkey->shortcut().toString(QKeySequence::NativeText),
-                                         m_hotkey->backendName()));
+                                    .arg(m_context.hotkey->shortcut().toString(QKeySequence::NativeText),
+                                         m_context.hotkey->backendName()));
     } else {
         m_hotkeyStatus->setText(tr("Not active (%1): %2")
-                                    .arg(m_hotkey->backendName(), m_hotkey->lastError()));
+                                    .arg(m_context.hotkey->backendName(), m_context.hotkey->lastError()));
     }
+}
+
+void SettingsDialog::refreshDetectionStatus()
+{
+    const ActivityMonitor *activity = m_context.activity;
+    if (!activity->idleSupported())
+        m_idleStatus->setText(tr("Idle time can't be read on this desktop, so timers always run."));
+    else
+        m_idleStatus->setText(tr("Detected via %1. Idle right now: %2 s.")
+                                  .arg(activity->idleBackendName())
+                                  .arg(activity->lastIdleMs() / 1000));
+    m_fullscreenStatus->setText(tr("Detected via %1.").arg(activity->fullscreenBackendName()));
 }

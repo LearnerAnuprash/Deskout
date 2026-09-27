@@ -3,6 +3,7 @@
 #include "app/alertcenter.h"
 #include "app/focusalerts.h"
 #include "app/reminderalerts.h"
+#include "app/statsrecorder.h"
 #include "core/commands.h"
 #include "core/database.h"
 #include "core/settingskeys.h"
@@ -63,12 +64,16 @@ void DeskoutApp::start(bool minimized)
                  qPrintable(dbError));
 
     m_reminders.start();
+    // Before the alert controllers: it must see a due reminder before an
+    // alert can resolve it (notification-only reminders resolve at once).
+    m_statsRecorder = std::make_unique<StatsRecorder>(&m_reminders, &m_focus, &m_stats);
     m_alertCenter = std::make_unique<AlertCenter>(&m_activity, &m_notifier, &m_pause);
     m_reminderAlerts = std::make_unique<ReminderAlertController>(&m_reminders, m_alertCenter.get(), &m_notifier);
     m_focusAlerts = std::make_unique<FocusAlertController>(&m_focus, m_alertCenter.get(), &m_notifier);
 
     m_window = std::make_unique<MainWindow>(
-        MainWindow::Context{&m_pause, &m_reminders, &m_focus, &m_focusLog, &m_notes, &m_docs, &m_updates});
+        MainWindow::Context{&m_pause, &m_reminders, &m_focus, &m_focusLog, &m_notes, &m_docs, &m_updates,
+                            &m_stats});
     connect(m_window.get(), &MainWindow::settingsRequested, this, [this] { showSettings(); });
     connect(m_window.get(), &MainWindow::reminderSettingsRequested, this,
             [this] { showSettings(SettingsDialog::Tab::Reminders); });

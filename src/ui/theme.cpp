@@ -144,6 +144,8 @@ QTreeWidget#DocsList::item { padding: 5px 2px; }
 QLabel#SectionTitle { font-size: 15px; font-weight: 600; }
 QLabel#FieldLabel { color: %7; font-weight: 600; }
 QLabel#RecapText { font-size: 14px; }
+QLabel#StatValue { font-size: 28px; font-weight: 600; }
+QLabel#StatValueAccent { font-size: 28px; font-weight: 600; color: %5; }
 QScrollArea#PageScroll, QWidget#PageScrollContent { background: transparent; }
 QFrame#PauseBanner { background: %9; border-radius: 8px; }
 QFrame#PauseBanner QLabel { color: %10; font-weight: 600; }

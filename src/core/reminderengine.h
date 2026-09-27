@@ -64,6 +64,9 @@ public:
 
     // Raise the reminder right away (the "Test now" button).
     void triggerNow(const QString &id);
+    // True while a reminder raised by triggerNow() is due, and during its
+    // reminderResolved() signal: a test, not a real break (stats skip it).
+    bool isManual(const QString &id) const;
     // Responses to a due reminder.
     void confirm(const QString &id);
     void snooze(const QString &id, int minutes);
@@ -81,6 +84,8 @@ private:
         qint64 elapsedMs = 0;
         bool due = false;
         bool wasActive = false;
+        // Raised by triggerNow() rather than by its clock.
+        bool manual = false;
     };
 
     Entry *find(const QString &id);

@@ -7,6 +7,7 @@
 #include "ui/focuspage.h"
 #include "ui/notespage.h"
 #include "ui/reminderspage.h"
+#include "ui/statspage.h"
 #include "ui/updatespage.h"
 
 #include <QCloseEvent>
@@ -66,8 +67,7 @@ MainWindow::MainWindow(const Context &context, QWidget *parent)
     m_pages->addWidget(new DocsPage(context.docs));
     m_updatesPage = new UpdatesPage(context.updates);
     m_pages->addWidget(m_updatesPage);
-    m_pages->addWidget(buildPlaceholderPage(tr("Stats"),
-        tr("Breaks taken, hydration and focus sessions, plus your current streak."), 7));
+    m_pages->addWidget(new StatsPage(context.stats));
     contentLayout->addWidget(m_pages, 1);
     layout->addWidget(content, 1);
     setCentralWidget(central);
@@ -181,19 +181,6 @@ QWidget *MainWindow::buildHomePage()
     }
     cardLayout->addLayout(form);
     layout->addWidget(card);
-    layout->addStretch(1);
-    return page;
-}
-
-QWidget *MainWindow::buildPlaceholderPage(const QString &title, const QString &description, int phase)
-{
-    auto *page = new QWidget;
-    auto *layout = new QVBoxLayout(page);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(10);
-    layout->addWidget(makeLabel(title, "PageTitle"));
-    layout->addWidget(makeLabel(description));
-    layout->addWidget(makeLabel(tr("Coming in Phase %1.").arg(phase), "Muted"));
     layout->addStretch(1);
     return page;
 }

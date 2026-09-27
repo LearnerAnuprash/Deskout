@@ -121,7 +121,14 @@ void ReminderEngine::triggerNow(const QString &id)
     if (!entry || entry->due)
         return;
     entry->due = true;
+    entry->manual = true;
     Q_EMIT reminderDue(id);
+}
+
+bool ReminderEngine::isManual(const QString &id) const
+{
+    const Entry *entry = find(id);
+    return entry && entry->manual;
 }
 
 void ReminderEngine::confirm(const QString &id)
@@ -169,5 +176,11 @@ void ReminderEngine::resolve(Entry *entry, qint64 elapsedMs, ReminderOutcome out
         return;
     entry->due = false;
     entry->elapsedMs = elapsedMs;
-    Q_EMIT reminderResolved(entry->config.id, outcome);
+    const QString id = entry->config.id;
+    Q_EMIT reminderResolved(id, outcome);
+    // Snoozing a test keeps it a test when it comes back.
+    if (outcome != ReminderOutcome::Snoozed) {
+        if (Entry *resolved = find(id)) // slots may have reloaded the entries
+            resolved->manual = false;
+    }
 }

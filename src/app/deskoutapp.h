@@ -8,6 +8,7 @@
 #include "core/notesstore.h"
 #include "core/pausemanager.h"
 #include "core/reminderengine.h"
+#include "core/stats.h"
 #include "platform/activity/activitymonitor.h"
 #include "platform/hotkey/globalhotkey.h"
 #include "ui/notifier.h"
@@ -24,12 +25,13 @@ class FocusAlertController;
 class FocusTimerWindow;
 class MainWindow;
 class RecapDialog;
+class StatsRecorder;
 class ReminderAlertController;
 class SingleInstance;
 class TrayController;
 
 // Owns and wires the app-level components: pause state, reminders, focus
-// timer, notes, docs, daily updates, tray, main window, settings, global hotkey and commands
+// timer, notes, docs, daily updates, stats, tray, main window, settings, global hotkey and commands
 // from other `deskout` launches.
 class DeskoutApp : public QObject
 {
@@ -72,6 +74,8 @@ private:
     NotesStore m_notes;
     DocsStore m_docs;
     DailyUpdatesStore m_updates;
+    StatsStore m_stats;
+    std::unique_ptr<StatsRecorder> m_statsRecorder;
     std::unique_ptr<AlertCenter> m_alertCenter;
     std::unique_ptr<ReminderAlertController> m_reminderAlerts;
     std::unique_ptr<FocusAlertController> m_focusAlerts;

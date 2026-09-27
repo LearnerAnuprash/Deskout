@@ -45,6 +45,7 @@ private Q_SLOTS:
         QCOMPARE(userVersion(), Database::schemaVersion());
         QVERIFY(tableExists(QStringLiteral("focus_sessions")));
         QVERIFY(tableExists(QStringLiteral("notes")));
+        QVERIFY(tableExists(QStringLiteral("docs")));
     }
 
     void reopeningKeepsSchema()
@@ -80,6 +81,7 @@ private Q_SLOTS:
         QVERIFY2(Database::open(path(), &error), qPrintable(error));
         QCOMPARE(userVersion(), Database::schemaVersion());
         QVERIFY(tableExists(QStringLiteral("notes")));
+        QVERIFY(tableExists(QStringLiteral("docs")));
         QSqlQuery query(Database::connection());
         QVERIFY(query.exec(QStringLiteral("SELECT topic FROM focus_sessions")) && query.next());
         QCOMPARE(query.value(0).toString(), QStringLiteral("kept"));

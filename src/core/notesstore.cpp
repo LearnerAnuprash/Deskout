@@ -8,16 +8,6 @@
 
 namespace {
 
-// LIKE treats % and _ as wildcards; match them literally.
-QString likePattern(const QString &text)
-{
-    QString escaped = text;
-    escaped.replace(QLatin1Char('\\'), QLatin1String("\\\\"));
-    escaped.replace(QLatin1Char('%'), QLatin1String("\\%"));
-    escaped.replace(QLatin1Char('_'), QLatin1String("\\_"));
-    return QLatin1Char('%') + escaped + QLatin1Char('%');
-}
-
 QString firstLine(const QString &text, QString *rest = nullptr)
 {
     const QString trimmed = text.trimmed();
@@ -56,8 +46,8 @@ QList<NoteSummary> NotesStore::list(const QString &filter) const
     sql += QStringLiteral(" ORDER BY updated_at DESC, id DESC");
     query.prepare(sql);
     if (!needle.isEmpty()) {
-        query.addBindValue(likePattern(needle));
-        query.addBindValue(likePattern(needle));
+        query.addBindValue(Database::likePattern(needle));
+        query.addBindValue(Database::likePattern(needle));
     }
     if (!query.exec()) {
         warn("list notes", query);

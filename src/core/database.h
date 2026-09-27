@@ -25,4 +25,8 @@ QString openError();
 
 QSqlDatabase connection();
 
+// "%text%" for `LIKE ? ESCAPE '\'`, with % and _ in `text` matched
+// literally.
+QString likePattern(const QString &text);
+
 } // namespace Database

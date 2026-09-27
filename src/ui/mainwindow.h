@@ -3,6 +3,7 @@
 #include <QMap>
 #include <QMainWindow>
 
+class DocsStore;
 class FocusLog;
 class FocusTimer;
 class NotesStore;
@@ -40,6 +41,7 @@ public:
         FocusTimer *focus;
         FocusLog *focusLog;
         NotesStore *notes;
+        DocsStore *docs;
     };
 
     explicit MainWindow(const Context &context, QWidget *parent = nullptr);

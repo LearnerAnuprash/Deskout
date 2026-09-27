@@ -3,6 +3,7 @@
 #include "core/pausemanager.h"
 #include "core/settingskeys.h"
 #include "ui/appicon.h"
+#include "ui/docspage.h"
 #include "ui/focuspage.h"
 #include "ui/notespage.h"
 #include "ui/reminderspage.h"
@@ -61,8 +62,7 @@ MainWindow::MainWindow(const Context &context, QWidget *parent)
     connect(focusPage, &FocusPage::popOutRequested, this, &MainWindow::focusWindowRequested);
     m_pages->addWidget(focusPage);
     m_pages->addWidget(new NotesPage(context.notes));
-    m_pages->addWidget(buildPlaceholderPage(tr("Topic Docs"),
-        tr("A lightweight document editor for longer write-ups, one doc per topic."), 5));
+    m_pages->addWidget(new DocsPage(context.docs));
     m_pages->addWidget(buildPlaceholderPage(tr("Daily Updates"),
         tr("Write what you did today; see it first thing tomorrow."), 6));
     m_pages->addWidget(buildPlaceholderPage(tr("Stats"),

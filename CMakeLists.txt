@@ -33,6 +33,8 @@ add_library(deskout_lib STATIC
     src/core/commands.h
     src/core/database.cpp
     src/core/database.h
+    src/core/docsstore.cpp
+    src/core/docsstore.h
     src/core/eyeexercises.cpp
     src/core/eyeexercises.h
     src/core/focuslog.cpp
@@ -63,6 +65,10 @@ add_library(deskout_lib STATIC
     src/platform/hotkey/keyformat.h
     src/ui/appicon.cpp
     src/ui/appicon.h
+    src/ui/doceditor.cpp
+    src/ui/doceditor.h
+    src/ui/docspage.cpp
+    src/ui/docspage.h
     src/ui/focuspage.cpp
     src/ui/focuspage.h
     src/ui/focustimerwindow.cpp
@@ -76,6 +82,8 @@ add_library(deskout_lib STATIC
     src/ui/notifier.cpp
     src/ui/notifier.h
     src/ui/reminderspage.cpp
+    src/ui/richtextedit.cpp
+    src/ui/richtextedit.h
     src/ui/reminderspage.h
     src/ui/remindersettingspage.cpp
     src/ui/remindersettingspage.h

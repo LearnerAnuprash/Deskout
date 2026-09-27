@@ -42,6 +42,7 @@ int main(int argc, char *argv[])
         {Commands::Pause, "Pause all reminders until resumed."},
         {Commands::Resume, "Resume all reminders."},
         {Commands::ToggleReadingMode, "Switch Reading mode (grayscale) on or off."},
+        {Commands::ToggleFocus, "Start a focus session, or pause/resume the running one."},
         {Commands::Quit, "Quit the running instance."},
     };
     for (const auto &[name, help] : commandOptions)
@@ -79,7 +80,7 @@ int main(int argc, char *argv[])
 
     DeskoutApp deskout(&instance);
     deskout.start(parser.isSet(minimized));
-    if (command == QLatin1String(Commands::Settings))
+    if (command == QLatin1String(Commands::Settings) || command == QLatin1String(Commands::ToggleFocus))
         deskout.handleCommand(command);
     return app.exec();
 }

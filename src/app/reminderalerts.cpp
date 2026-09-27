@@ -1,129 +1,99 @@
 #include "app/reminderalerts.h"
 
-#include "core/pausemanager.h"
+#include "app/alertcenter.h"
 #include "core/reminderengine.h"
-#include "platform/activity/activitymonitor.h"
-#include "ui/fullscreenalarm.h"
 #include "ui/notifier.h"
 
-#include <QTimer>
-
 namespace {
-// Breathing room between two queued alarms.
-constexpr int NextAlarmDelayMs = 800;
+
+constexpr char KeyPrefix[] = "reminder/";
 constexpr int PauseSnoozeMinutes = 5;
-constexpr int MaxTrackedNotifications = 64;
+
+const struct
+{
+    const char *key;
+    int minutes;
+} SnoozeActions[] = {{"snooze-5", 5}, {"snooze-10", 10}};
+
+QString alertKey(const QString &id)
+{
+    return QLatin1String(KeyPrefix) + id;
+}
+
+// Empty when the alert isn't a reminder's.
+QString reminderId(const QString &key)
+{
+    return key.startsWith(QLatin1String(KeyPrefix)) ? key.mid(int(qstrlen(KeyPrefix))) : QString();
+}
+
 } // namespace
 
-ReminderAlertController::ReminderAlertController(ReminderEngine *engine, ActivityMonitor *activity,
-                                                 Notifier *notifier, PauseManager *pause,
-                                                 QObject *parent)
+ReminderAlertController::ReminderAlertController(ReminderEngine *engine, AlertCenter *alerts,
+                                                 Notifier *notifier, QObject *parent)
     : QObject(parent)
     , m_engine(engine)
-    , m_activity(activity)
+    , m_alerts(alerts)
     , m_notifier(notifier)
 {
     connect(m_engine, &ReminderEngine::reminderDue, this, &ReminderAlertController::onDue);
-    connect(pause, &PauseManager::pausedChanged, this, &ReminderAlertController::onPausedChanged);
-    connect(m_notifier, &Notifier::actionInvoked, this, &ReminderAlertController::onNotificationAction);
-}
-
-ReminderAlertController::~ReminderAlertController()
-{
-    delete m_alarm;
+    connect(m_alerts, &AlertCenter::responded, this, &ReminderAlertController::onResponded);
+    connect(m_alerts, &AlertCenter::notified, this, &ReminderAlertController::onNotified);
+    connect(m_alerts, &AlertCenter::interrupted, this, &ReminderAlertController::onInterrupted);
+    connect(m_alerts, &AlertCenter::fullScreenDisabled, this, &ReminderAlertController::disableFullScreen);
 }
 
 void ReminderAlertController::onDue(const QString &id)
 {
-    if (!m_engine->config(id).fullScreen) {
-        notify(id);
-        return;
-    }
-    if (m_activity->shouldAvoidFullscreen()) {
-        notify(id, tr("Shown as a notification because another app is full-screen or you're in a call."));
-        return;
-    }
-    const bool showing = m_alarm && m_alarm->reminderId() == id;
-    if (!showing && !m_queue.contains(id))
-        m_queue << id;
-    showNextAlarm();
-}
-
-void ReminderAlertController::showNextAlarm()
-{
-    while (!m_alarm && !m_queue.isEmpty()) {
-        const QString id = m_queue.takeFirst();
-        // Things may have changed while this one waited in the queue.
-        if (m_activity->shouldAvoidFullscreen()) {
-            notify(id, tr("Shown as a notification because another app is full-screen or you're in a call."));
-            continue;
-        }
-
-        auto *alarm = new FullScreenAlarm(id, this);
-        m_alarm = alarm;
-        connect(alarm, &FullScreenAlarm::confirmed, this, [this, id] { m_engine->confirm(id); });
-        connect(alarm, &FullScreenAlarm::snoozed, this, [this, id](int minutes) { m_engine->snooze(id, minutes); });
-        connect(alarm, &FullScreenAlarm::fullScreenDisabled, this, [this, id] { disableFullScreen(id); });
-        connect(alarm, &FullScreenAlarm::finished, this, [this, alarm] {
-            alarm->deleteLater();
-            if (m_alarm == alarm)
-                m_alarm = nullptr;
-            QTimer::singleShot(NextAlarmDelayMs, this, &ReminderAlertController::showNextAlarm);
-        });
-        alarm->show();
-    }
-}
-
-void ReminderAlertController::notify(const QString &id, const QString &note)
-{
     const ReminderTexts texts = Reminders::texts(id);
-    const QString body = note.isEmpty() ? texts.body : texts.body + QLatin1Char('\n') + note;
-    const uint notificationId = m_notifier->notify(
-        texts.title, body,
-        {{QStringLiteral("done"), texts.confirmLabel}, {QStringLiteral("snooze"), tr("Snooze 5 min")}});
-
-    if (notificationId != 0) {
-        if (m_notifications.size() >= MaxTrackedNotifications)
-            m_notifications.clear();
-        m_notifications.insert(notificationId, id);
-    }
-    // A notification needs no answer: the clock restarts now. Buttons on it
-    // still report back through onNotificationAction().
-    m_engine->acknowledge(id);
+    Alert alert;
+    alert.key = alertKey(id);
+    alert.title = texts.title;
+    alert.body = texts.body;
+    alert.confirmLabel = texts.confirmLabel;
+    for (const auto &snooze : SnoozeActions)
+        alert.actions << AlertAction{QLatin1String(snooze.key), tr("Snooze %1 min").arg(snooze.minutes)};
+    alert.disableFullScreenLabel = tr("Disable full-screen reminder");
+    alert.fullScreen = m_engine->config(id).fullScreen;
+    alert.eyeExercise = id == QLatin1String(ReminderIds::Eye);
+    m_alerts->raise(alert);
 }
 
-void ReminderAlertController::onPausedChanged(bool paused)
+void ReminderAlertController::onResponded(const QString &key, const QString &actionKey)
 {
-    if (!paused)
+    const QString id = reminderId(key);
+    if (id.isEmpty())
         return;
-    // Pausing mid-alarm (e.g. hotkey during a call): put everything showing
-    // or queued off until shortly after the pause ends.
-    QStringList pending = m_queue;
-    m_queue.clear();
-    if (m_alarm) {
-        pending.prepend(m_alarm->reminderId());
-        m_alarm->dismiss();
+    if (actionKey == QLatin1String(Alert::ConfirmKey)) {
+        m_engine->confirm(id);
+        return;
     }
-    for (const QString &id : std::as_const(pending))
+    for (const auto &snooze : SnoozeActions) {
+        if (actionKey == QLatin1String(snooze.key))
+            m_engine->snooze(id, snooze.minutes);
+    }
+}
+
+void ReminderAlertController::onNotified(const QString &key)
+{
+    // A notification needs no answer: the clock restarts now.
+    const QString id = reminderId(key);
+    if (!id.isEmpty())
+        m_engine->acknowledge(id);
+}
+
+void ReminderAlertController::onInterrupted(const QString &key)
+{
+    // Paused mid-alarm: try again shortly after the pause ends.
+    const QString id = reminderId(key);
+    if (!id.isEmpty())
         m_engine->snooze(id, PauseSnoozeMinutes);
 }
 
-void ReminderAlertController::onNotificationAction(uint notificationId, const QString &actionKey)
+void ReminderAlertController::disableFullScreen(const QString &key)
 {
-    // "default" (clicking the notification body) carries no answer.
-    if (actionKey != QLatin1String("done") && actionKey != QLatin1String("snooze"))
-        return;
-    const QString id = m_notifications.take(notificationId);
+    const QString id = reminderId(key);
     if (id.isEmpty())
-        return; // another app's notification
-    if (actionKey == QLatin1String("done"))
-        m_engine->confirm(id);
-    else if (actionKey == QLatin1String("snooze"))
-        m_engine->snooze(id, 5);
-}
-
-void ReminderAlertController::disableFullScreen(const QString &id)
-{
+        return;
     ReminderConfig config = m_engine->config(id);
     config.fullScreen = false;
     m_engine->setConfig(config);

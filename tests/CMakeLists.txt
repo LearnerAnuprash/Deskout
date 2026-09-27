@@ -14,6 +14,12 @@ deskout_add_test(tst_autostart)
 deskout_add_test(tst_reminders)
 deskout_add_test(tst_reminderengine)
 deskout_add_test(tst_readingmode)
+deskout_add_test(tst_focustimer)
+deskout_add_test(tst_focuslog)
+deskout_add_test(tst_alertcenter)
+# Alarms open windows and send notifications: keep both off the real desktop.
+set_tests_properties(tst_alertcenter PROPERTIES ENVIRONMENT
+    "QT_QPA_PLATFORM=offscreen;DBUS_SESSION_BUS_ADDRESS=unix:path=/nonexistent/deskout-test")
 if(UNIX AND NOT APPLE)
     deskout_add_test(tst_gsettings)
 endif()

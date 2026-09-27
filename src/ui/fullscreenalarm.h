@@ -1,5 +1,7 @@
 #pragma once
 
+#include "core/alert.h"
+
 #include <QList>
 #include <QObject>
 #include <QPointer>
@@ -12,23 +14,26 @@ class QStackedWidget;
 
 // Alarm-style takeover covering every monitor. Only its own buttons close
 // it: clicking elsewhere, Escape and Alt+F4 do nothing. The main screen
-// shows the controls; other screens show a dimmed "break time" notice.
+// shows the controls; other screens show a short "use the main screen"
+// notice.
 class FullScreenAlarm : public QObject
 {
     Q_OBJECT
 
 public:
-    explicit FullScreenAlarm(const QString &reminderId, QObject *parent = nullptr);
+    explicit FullScreenAlarm(const Alert &alert, QObject *parent = nullptr);
     ~FullScreenAlarm() override;
 
-    QString reminderId() const { return m_reminderId; }
+    QString alertKey() const { return m_alert.key; }
+    // True once a button gave an answer (the eye exercise may still show).
+    bool isAnswered() const { return m_answered; }
     void show();
     // Close without a user response (e.g. global pause). Emits finished().
     void dismiss();
 
 Q_SIGNALS:
-    void confirmed();
-    void snoozed(int minutes);
+    // Alert::ConfirmKey for the primary button, else an AlertAction key.
+    void responded(const QString &actionKey);
     void fullScreenDisabled();
     // Always emitted exactly once, after any of the above.
     void finished();
@@ -42,7 +47,7 @@ private:
     void tickExercise();
     void finish();
 
-    QString m_reminderId;
+    Alert m_alert;
     QList<QPointer<AlarmWindow>> m_windows;
     QStackedWidget *m_stack = nullptr;
     QList<QPushButton *> m_promptButtons;
@@ -54,4 +59,5 @@ private:
     QTimer m_autoClose;
     int m_secondsLeft = 0;
     bool m_finished = false;
+    bool m_answered = false;
 };

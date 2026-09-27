@@ -21,6 +21,16 @@ inline constexpr char FullscreenDetectionEnabled[] = "detection/fullscreenEnable
 
 inline constexpr char ReadingModeEnabled[] = "readingMode/enabled";
 
+// Duration and topic of the last focus session, pre-filled next time.
+inline constexpr char FocusMinutes[] = "focus/minutes";
+inline constexpr char FocusTopic[] = "focus/topic";
+inline constexpr char FocusFullScreenAlert[] = "focus/fullScreenAlert";
+inline constexpr bool FocusFullScreenAlertDefault = true;
+inline constexpr char FocusAlwaysOnTop[] = "focus/alwaysOnTop";
+inline constexpr char FocusMiniMode[] = "focus/miniMode";
+inline constexpr char FocusWindowGeometry[] = "focus/windowGeometry";
+inline constexpr char FocusMiniGeometry[] = "focus/miniGeometry";
+
 inline constexpr char UiTheme[] = "ui/theme";
 inline constexpr char UiTrayHintShown[] = "ui/trayHintShown";
 inline constexpr char UiWindowGeometry[] = "ui/windowGeometry";
